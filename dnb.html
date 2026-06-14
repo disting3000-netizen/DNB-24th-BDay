@@ -522,6 +522,7 @@
 
   <script src="js/scene-layout.js"></script>
   <script src="audio/game-audio.js"></script>
+  <script src="js/game-reset.js"></script>
   <script>
     SceneLayout.init();
     GameAudio.initBgm('mystic_bgm.mp3');
@@ -892,6 +893,7 @@
       }
     });
     menuReturn.addEventListener('click', () => {
+      GameReset.resetGameProgress();
       window.location.href = 'Begin.html';
     });
 

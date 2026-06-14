@@ -279,6 +279,31 @@
       line-height: 1;
     }
 
+    .challenge-continue {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 90;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 22px;
+      border: 2px solid #f9e99a;
+      border-radius: 999px;
+      background: rgba(59, 7, 100, 0.92);
+      color: #f9e99a;
+      font-size: 1rem;
+      cursor: pointer;
+      pointer-events: auto;
+    }
+
+    .challenge-continue.is-visible { display: flex; }
+
+    .challenge-continue:hover {
+      background: rgba(88, 20, 140, 0.96);
+    }
+
     .instructions {
       position: fixed;
       top: 20px;
@@ -341,6 +366,8 @@
     <span class="map-return__arrow" aria-hidden="true">→</span>
     <span>Click to go back to Map</span>
   </button>
+
+  <button class="challenge-continue" id="challenge-continue" type="button">Continue -&gt;</button>
 
   <div class="scene-viewport">
     <div class="scene-stage scene-stage--cover-bg scene-stage--nose" id="scene-stage">
@@ -520,6 +547,7 @@
     const dialogueContinue = document.getElementById('dialogue-continue');
     const pileArrow = document.getElementById('pile-arrow');
     const mapReturn = document.getElementById('map-return');
+    const challengeContinue = document.getElementById('challenge-continue');
     const instructionsPanel = document.getElementById('instructions');
     const victoryAudio = new Audio('audio/victory.mp3');
 
@@ -535,7 +563,7 @@
     let reactionDialogueLines = null;
     let reactionDialogueLineIndex = 0;
     let reactionDialogueOnComplete = null;
-    let discardedNoseCount = 0;
+    let allNosesTriedOnce = false;
     let endingTriggered = false;
     let isVictory = false;
 
@@ -830,7 +858,64 @@
       return document.querySelectorAll('[data-nose-tried="true"]').length;
     }
 
+    function getNoseStackIndex(sticker) {
+      const noseId = getNoseIdFromSticker(sticker);
+      return PILE_ITEMS.findIndex((item) => item.id === noseId);
+    }
+
+    function resetStickerToOriginalSize(sticker) {
+      const noseId = getNoseIdFromSticker(sticker);
+      const item = PILE_ITEMS.find((entry) => entry.id === noseId);
+      if (item) {
+        sticker.style.setProperty('--sticker-size', `${item.size}px`);
+      }
+    }
+
+    function enableNoseReplay(sticker) {
+      sticker.classList.remove('sticker--discarded');
+      sticker.classList.add('sticker--draggable');
+    }
+
+    function enableAllNoseReplay() {
+      document.querySelectorAll('[data-nose-tried="true"]').forEach((sticker) => {
+        enableNoseReplay(sticker);
+      });
+    }
+
+    function disableAllNoseReplay() {
+      document.querySelectorAll('[data-nose-tried="true"]').forEach((sticker) => {
+        sticker.classList.remove('is-dragging', 'sticker--draggable', 'sticker--on-face');
+        sticker.classList.add('sticker--discarded');
+      });
+    }
+
+    function showChallengeContinue() {
+      challengeContinue.classList.add('is-visible');
+    }
+
+    function startEndingDialogue() {
+      if (endingTriggered || isVictory) {
+        return;
+      }
+
+      endingTriggered = true;
+      challengeContinue.classList.remove('is-visible');
+      disableAllNoseReplay();
+      lockScene();
+      window.setTimeout(() => {
+        showDialogueSequence(ENDING_DIALOGUE, startVictorySequence);
+      }, 500);
+    }
+
+    function canTryNose(sticker) {
+      if (allNosesTriedOnce && !endingTriggered) {
+        return true;
+      }
+      return sticker.dataset.noseTried !== 'true';
+    }
+
     function finishNoseReaction(sticker) {
+      resetStickerToOriginalSize(sticker);
       sticker.style.transform = '';
       sticker.classList.remove(
         'sticker--on-face',
@@ -843,18 +928,23 @@
       placeStickerOnRight(sticker);
       isReacting = false;
       unlockScene();
+
+      if (allNosesTriedOnce && !endingTriggered) {
+        enableNoseReplay(sticker);
+        return;
+      }
+
       checkAllNosesTried();
     }
 
     function checkAllNosesTried() {
-      if (endingTriggered || isVictory || countTriedNoses() < PILE_ITEMS.length) {
+      if (allNosesTriedOnce || isVictory || endingTriggered || countTriedNoses() < PILE_ITEMS.length) {
         return;
       }
 
-      endingTriggered = true;
-      window.setTimeout(() => {
-        showDialogueSequence(ENDING_DIALOGUE, startVictorySequence);
-      }, 500);
+      allNosesTriedOnce = true;
+      showChallengeContinue();
+      enableAllNoseReplay();
     }
 
     function positionMapReturnBelowNose() {
@@ -907,11 +997,11 @@
     function placeStickerOnRight(sticker) {
       const width = sticker.offsetWidth;
       const x = SceneLayout.DESIGN_W - width - RIGHT_SIDE_MARGIN_PX;
+      const stackIndex = Math.max(0, getNoseStackIndex(sticker));
       const y = SceneLayout.DESIGN_H * RIGHT_STACK_START_RATIO
-        + discardedNoseCount * RIGHT_STACK_ROW_HEIGHT_PX;
+        + stackIndex * RIGHT_STACK_ROW_HEIGHT_PX;
       sticker.style.left = `${x}px`;
       sticker.style.top = `${y}px`;
-      discardedNoseCount += 1;
     }
 
     function playAudio(audio) {
@@ -948,6 +1038,7 @@
       isReacting = true;
       lockScene();
 
+      resetStickerToOriginalSize(sticker);
       sticker.classList.remove('is-dragging');
       sticker.classList.remove('sticker--draggable');
       sticker.classList.add('sticker--on-face');
@@ -980,7 +1071,7 @@
     }
 
     function handleNoseDrop(sticker) {
-      if (!challengeStarted || isReacting || sticker.dataset.noseTried === 'true') {
+      if (!challengeStarted || isReacting || !canTryNose(sticker)) {
         return;
       }
 
@@ -1055,6 +1146,13 @@
     }
 
     entryHotspot.addEventListener('click', enterCastle);
+
+    challengeContinue.addEventListener('click', () => {
+      if (isReacting || dialogueOverlay.classList.contains('is-active')) {
+        return;
+      }
+      startEndingDialogue();
+    });
 
     mapReturn.addEventListener('click', () => {
       localStorage.setItem('nose-challenge-complete', 'true');

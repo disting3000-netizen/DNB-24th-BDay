@@ -5,6 +5,7 @@
   let scale = 1;
   let stageEl = null;
   let wrapperEl = null;
+  let scaleMode = 'cover';
 
   function applyScale() {
     if (!stageEl || !wrapperEl) {
@@ -13,9 +14,10 @@
 
     const viewportW = global.innerWidth;
     const viewportH = global.innerHeight;
+    const fitScale = Math.min(viewportW / DESIGN_W, viewportH / DESIGN_H);
+    const coverScale = Math.max(viewportW / DESIGN_W, viewportH / DESIGN_H);
 
-    // Cover the viewport so the scene fills the screen (may crop edges slightly).
-    scale = Math.max(viewportW / DESIGN_W, viewportH / DESIGN_H);
+    scale = scaleMode === 'contain' ? fitScale : coverScale;
 
     wrapperEl.style.width = `${DESIGN_W * scale}px`;
     wrapperEl.style.height = `${DESIGN_H * scale}px`;
@@ -41,7 +43,8 @@
     return wrapper;
   }
 
-  function init(stageId = 'scene-stage') {
+  function init(stageId = 'scene-stage', options = {}) {
+    scaleMode = options.scaleMode === 'contain' ? 'contain' : 'cover';
     stageEl = global.document.getElementById(stageId);
     if (!stageEl) {
       return;
