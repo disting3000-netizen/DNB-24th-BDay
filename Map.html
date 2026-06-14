@@ -453,6 +453,7 @@
 
   <script src="js/scene-layout.js"></script>
   <script src="audio/game-audio.js"></script>
+  <script src="js/game-replay.js"></script>
   <script>
     SceneLayout.init('scene-stage', { scaleMode: 'contain' });
     GameAudio.initBgm('goofy_bgm.mp3');
@@ -521,7 +522,14 @@
     let isTraveling = false;
     let activeDestinations = [];
 
+    function isReplayMode() {
+      return GameReplay.isActive();
+    }
+
     function isDestinationUnlocked(id) {
+      if (isReplayMode()) {
+        return id !== 'sticker-start';
+      }
       if (id === 'sticker-willy') {
         return true;
       }
@@ -538,6 +546,9 @@
     }
 
     function isDestinationCompleted(id) {
+      if (isReplayMode()) {
+        return false;
+      }
       if (id === 'sticker-willy') {
         return localStorage.getItem(DARS_COMPLETE_KEY) === 'true';
       }
@@ -878,6 +889,13 @@
     }
 
     function initIntro() {
+      if (isReplayMode()) {
+        document.getElementById('ingredient-checklist').hidden = true;
+        hideIntro();
+        refreshDestinationAccess();
+        return;
+      }
+
       if (localStorage.getItem(MAP_INTRO_KEY) === 'true') {
         hideIntro();
         refreshDestinationAccess();
@@ -935,10 +953,14 @@
 
     window.addEventListener('load', () => {
       initIntro();
-      initDarsCompletion();
-      initNoseCompletion();
-      initBabyCompletion();
-      updateIngredientChecklist();
+      if (!isReplayMode()) {
+        initDarsCompletion();
+        initNoseCompletion();
+        initBabyCompletion();
+        updateIngredientChecklist();
+      } else {
+        document.getElementById('ingredient-checklist').hidden = true;
+      }
       refreshDestinationAccess();
       updateMapLayout();
     });
@@ -946,6 +968,10 @@
 
     destinationStickers.forEach(({ id, url }) => {
       document.getElementById(id).addEventListener('click', () => {
+        if (isReplayMode()) {
+          travelDnbTo(id, url);
+          return;
+        }
         if (!isDestinationUnlocked(id) || isDestinationCompleted(id)) {
           return;
         }

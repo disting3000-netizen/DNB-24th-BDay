@@ -184,6 +184,57 @@ body {
   font-weight: 700;
 }
 
+.btn--compact {
+  margin-top: 10px;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+}
+
+.level-select {
+  position: fixed;
+  inset: 0;
+  z-index: 160;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(10, 10, 30, 0.72);
+  pointer-events: auto;
+}
+
+.level-select.is-open {
+  display: flex;
+}
+
+.level-select[hidden] {
+  display: none !important;
+}
+
+.level-select__panel {
+  width: min(420px, 92vw);
+  padding: 28px 24px;
+  border: 2px solid #f9e99a;
+  border-radius: 16px;
+  background: rgba(59, 7, 100, 0.94);
+  text-align: center;
+}
+
+.level-select__title {
+  margin-bottom: 18px;
+  font-size: 1.5rem;
+}
+
+.level-select__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.level-select__btn {
+  width: 100%;
+}
+
 .btn:hover {
   filter: brightness(1.08);
 }

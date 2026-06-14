@@ -523,6 +523,7 @@
   <script src="js/scene-layout.js"></script>
   <script src="audio/game-audio.js"></script>
   <script src="js/game-reset.js"></script>
+  <script src="js/game-replay.js"></script>
   <script>
     SceneLayout.init();
     GameAudio.initBgm('mystic_bgm.mp3');
@@ -590,6 +591,23 @@
     let isAnimating = false;
     let hotspotDialogueDismiss = null;
     const placedIngredients = new Set();
+
+    function isReplayMode() {
+      return GameReplay.isActive();
+    }
+
+    function showFinaleScene() {
+      introOverlay.classList.add('intro-overlay--hidden');
+      document.getElementById('scene-stage').classList.add('has-cauldron');
+      sceneContent.classList.remove('is-locked');
+      ingredientStickers.forEach((sticker) => {
+        sticker.classList.remove('is-draggable', 'is-dragging');
+        sticker.classList.add('is-placed', 'is-visible');
+        placedIngredients.add(sticker.dataset.ingredientId);
+      });
+      hideHotspotDialogue();
+      finalePanel.classList.add('is-visible');
+    }
 
     function positionHotspotDialogue() {
       const rect = cauldronHotspot.getBoundingClientRect();
@@ -897,7 +915,11 @@
       window.location.href = 'Begin.html';
     });
 
-    startIntroStep();
+    if (isReplayMode()) {
+      showFinaleScene();
+    } else {
+      startIntroStep();
+    }
   </script>
 </body>
 </html>

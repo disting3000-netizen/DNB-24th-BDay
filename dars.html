@@ -351,6 +351,7 @@
 
   <script src="js/scene-layout.js"></script>
   <script src="audio/game-audio.js"></script>
+  <script src="js/game-replay.js"></script>
   <script>
     SceneLayout.init();
     GameAudio.initBgm('cooking_show_bgm.mp3');
@@ -456,8 +457,12 @@
       }
     }
 
+    function isReplayMode() {
+      return GameReplay.isActive();
+    }
+
     function renderInstructions() {
-      if (localStorage.getItem(STORAGE.intro) !== 'true') {
+      if (!isReplayMode() && localStorage.getItem(STORAGE.intro) !== 'true') {
         instructionsPanel.classList.add('instructions--hidden');
         return;
       }
@@ -1000,6 +1005,12 @@
     }
 
     function initIntro() {
+      if (isReplayMode()) {
+        hideIntro();
+        renderInstructions();
+        return;
+      }
+
       if (localStorage.getItem(STORAGE.intro) === 'true') {
         hideIntro();
         renderInstructions();
@@ -1080,15 +1091,41 @@
       }
     }
 
+    function resetReplayChallenge() {
+      gamePhase = PHASE.MELT_BUTTER;
+      instructionStep = 0;
+      isAnimating = false;
+      mixedChocolateSticker = null;
+      filledMoldSticker = null;
+      darsSticker = null;
+      mapReturn.classList.remove('is-visible');
+
+      try {
+        localStorage.removeItem(STORAGE.gamePhase);
+        localStorage.removeItem(STORAGE.positions);
+      } catch (error) {
+        // Ignore storage failures in private mode.
+      }
+    }
+
     mapReturn.addEventListener('click', () => {
-      localStorage.setItem('dars-challenge-complete', 'true');
-      sessionStorage.setItem('dars-map-animate', 'true');
+      if (!isReplayMode()) {
+        localStorage.setItem('dars-challenge-complete', 'true');
+        sessionStorage.setItem('dars-map-animate', 'true');
+      }
       window.location.href = 'Map.html';
     });
 
     document.querySelectorAll('.sticker--draggable').forEach(bindDraggable);
 
     window.addEventListener('load', () => {
+      if (isReplayMode()) {
+        resetReplayChallenge();
+        initIntro();
+        renderInstructions();
+        return;
+      }
+
       loadGamePhase();
       loadStickerPositions();
       restoreGameState();

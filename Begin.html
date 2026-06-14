@@ -291,6 +291,8 @@
       <hr class="menu__divider">
       <button class="menu__option" type="button" id="start-button">Start</button>
       <hr class="menu__divider">
+      <button class="menu__option" type="button" id="replay-button">Replay</button>
+      <hr class="menu__divider">
       <button class="menu__option" type="button" id="nah-button">Nah</button>
       <hr class="menu__divider">
     </nav>
@@ -317,11 +319,19 @@
 
   <script src="js/scene-layout.js"></script>
   <script src="audio/game-audio.js"></script>
+  <script src="js/game-replay.js"></script>
   <script>
     SceneLayout.init();
     GameAudio.initBgm('goofy_bgm.mp3');
 
     document.getElementById('start-button').addEventListener('click', () => {
+      GameReplay.disable();
+      GameAudio.unlockAudio();
+      window.location.href = 'Map.html';
+    });
+
+    document.getElementById('replay-button').addEventListener('click', () => {
+      GameReplay.enable();
       GameAudio.unlockAudio();
       window.location.href = 'Map.html';
     });

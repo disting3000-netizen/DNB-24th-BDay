@@ -274,6 +274,13 @@
 
     .map-return.is-visible { display: flex; }
 
+    .map-return--hub {
+      top: 20px;
+      right: 20px;
+      left: auto;
+      transform: none;
+    }
+
     .map-return__arrow {
       font-size: 1.4rem;
       line-height: 1;
@@ -381,6 +388,7 @@
 
   <script src="js/scene-layout.js"></script>
   <script src="audio/game-audio.js"></script>
+  <script src="js/game-replay.js"></script>
   <script>
     SceneLayout.init();
     GameAudio.initBgm('dungeon_bgm.mp3');
@@ -566,6 +574,10 @@
     let allNosesTriedOnce = false;
     let endingTriggered = false;
     let isVictory = false;
+
+    function isReplayMode() {
+      return GameReplay.isActive();
+    }
 
     function lockScene() {
       sceneContent.classList.add('is-locked');
@@ -908,6 +920,9 @@
     }
 
     function canTryNose(sticker) {
+      if (isReplayMode() && !endingTriggered) {
+        return true;
+      }
       if (allNosesTriedOnce && !endingTriggered) {
         return true;
       }
@@ -929,6 +944,11 @@
       isReacting = false;
       unlockScene();
 
+      if (isReplayMode() && !endingTriggered) {
+        enableNoseReplay(sticker);
+        return;
+      }
+
       if (allNosesTriedOnce && !endingTriggered) {
         enableNoseReplay(sticker);
         return;
@@ -938,7 +958,7 @@
     }
 
     function checkAllNosesTried() {
-      if (allNosesTriedOnce || isVictory || endingTriggered || countTriedNoses() < PILE_ITEMS.length) {
+      if (isReplayMode() || allNosesTriedOnce || isVictory || endingTriggered || countTriedNoses() < PILE_ITEMS.length) {
         return;
       }
 
@@ -1090,12 +1110,31 @@
 
     function enterCastle() {
       advanceInstruction();
+      startNoseChallenge();
+    }
+
+    function startNoseChallenge() {
       document.getElementById('scene-stage').classList.add('is-interior');
-      entryHotspot.remove();
+      if (entryHotspot.isConnected) {
+        entryHotspot.remove();
+      }
       placeGorgon();
       placeGorgonHotspot();
       placeNosePile();
+      challengeStarted = true;
+      unlockScene();
+
+      if (isReplayMode()) {
+        return;
+      }
+
       startDialogue();
+    }
+
+    function initReplayMode() {
+      instructionsPanel.classList.add('instructions--hidden');
+      mapReturn.classList.add('is-visible', 'map-return--hub');
+      startNoseChallenge();
     }
 
     function normalizeStickerPosition(sticker) {
@@ -1155,8 +1194,10 @@
     });
 
     mapReturn.addEventListener('click', () => {
-      localStorage.setItem('nose-challenge-complete', 'true');
-      sessionStorage.setItem('nose-map-animate', 'true');
+      if (!isReplayMode()) {
+        localStorage.setItem('nose-challenge-complete', 'true');
+        sessionStorage.setItem('nose-map-animate', 'true');
+      }
       window.location.href = 'Map.html';
     });
 
@@ -1173,6 +1214,10 @@
     });
 
     renderInstructions();
+
+    if (isReplayMode()) {
+      initReplayMode();
+    }
   </script>
 </body>
 </html>

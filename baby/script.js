@@ -856,6 +856,7 @@ class InputController {
       !this.game.introComplete
       || this.game.physics.state !== GAME_STATE.READY
       || this.game.ui.el.resultModal.classList.contains('is-open')
+      || this.game.el.levelSelect.classList.contains('is-open')
       || !this.game.el.victoryOverlay.classList.contains('victory-overlay--hidden')
     ) {
       return;
@@ -904,6 +905,10 @@ class InputController {
 // ---------------------------------------------------------------------------
 // Game
 // ---------------------------------------------------------------------------
+function isReplayMode() {
+  return window.GameReplay && GameReplay.isActive();
+}
+
 class Game {
   constructor() {
     this.canvas = document.getElementById('game-canvas');
@@ -922,6 +927,10 @@ class Game {
       btnRetry: document.getElementById('btn-retry'),
       btnReplay: document.getElementById('btn-replay'),
       btnNext: document.getElementById('btn-next'),
+      btnChangeLevel: document.getElementById('btn-change-level'),
+      levelSelect: document.getElementById('level-select'),
+      levelSelectGrid: document.getElementById('level-select-grid'),
+      levelSelectMap: document.getElementById('level-select-map'),
       victoryOverlay: document.getElementById('victory-overlay'),
       victorySticker: document.getElementById('victory-sticker'),
       mapReturn: document.getElementById('map-return')
@@ -953,12 +962,59 @@ class Game {
     });
 
     this.el.mapReturn.addEventListener('click', () => {
-      localStorage.setItem('baby-challenge-complete', 'true');
-      sessionStorage.setItem('baby-map-animate', 'true');
+      if (!isReplayMode()) {
+        localStorage.setItem('baby-challenge-complete', 'true');
+        sessionStorage.setItem('baby-map-animate', 'true');
+      }
       window.location.href = 'Map.html';
     });
 
+    this.el.levelSelectMap.addEventListener('click', () => {
+      window.location.href = 'Map.html';
+    });
+
+    this.el.btnChangeLevel.addEventListener('click', () => {
+      if (this.physics.state === GAME_STATE.FLYING) {
+        return;
+      }
+      this.ui.hideModal();
+      this.showLevelSelect();
+    });
+
+    this.buildLevelSelectButtons();
+
     window.addEventListener('resize', () => this.onResize());
+  }
+
+  buildLevelSelectButtons() {
+    this.el.levelSelectGrid.replaceChildren();
+    for (let level = 1; level <= this.levelManager.maxLevel; level += 1) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'btn level-select__btn';
+      button.textContent = `Level ${level}`;
+      button.dataset.level = String(level);
+      button.addEventListener('click', () => {
+        this.selectLevel(level);
+      });
+      this.el.levelSelectGrid.appendChild(button);
+    }
+  }
+
+  showLevelSelect() {
+    this.el.levelSelect.hidden = false;
+    this.el.levelSelect.classList.add('is-open');
+  }
+
+  hideLevelSelect() {
+    this.el.levelSelect.hidden = true;
+    this.el.levelSelect.classList.remove('is-open');
+  }
+
+  selectLevel(level) {
+    this.hideLevelSelect();
+    this.levelManager.setLevel(level);
+    this.startLevel();
   }
 
   async init() {
@@ -967,20 +1023,27 @@ class Game {
       this.renderer = new Renderer(this.canvas, this.images);
       this.input = new InputController(this.canvas, this);
       this.onResize();
-
-      const savedLevel = Number.parseInt(localStorage.getItem('baby-level-unlocked') || '1', 10);
-      this.levelManager.setLevel(savedLevel);
       this.resetOverlays();
 
-      if (this.levelManager.level === 1) {
-        this.introComplete = false;
-        this.intro.start();
-      } else {
+      if (isReplayMode()) {
         this.introComplete = true;
         this.intro.hide();
-      }
+        this.el.btnChangeLevel.hidden = false;
+        this.showLevelSelect();
+      } else {
+        const savedLevel = Number.parseInt(localStorage.getItem('baby-level-unlocked') || '1', 10);
+        this.levelManager.setLevel(savedLevel);
 
-      this.startLevel();
+        if (this.levelManager.level === 1) {
+          this.introComplete = false;
+          this.intro.start();
+        } else {
+          this.introComplete = true;
+          this.intro.hide();
+        }
+
+        this.startLevel();
+      }
 
       this.lastFrameTime = null;
       requestAnimationFrame((time) => this.loop(time));
@@ -1062,6 +1125,18 @@ class Game {
       this.geeseAudio.pause();
 
       if (this.levelManager.level >= this.levelManager.maxLevel) {
+        if (isReplayMode()) {
+          window.setTimeout(() => {
+            this.ui.showSuccess(
+              this.levelManager.level,
+              this.levelManager.maxLevel,
+              () => this.startLevel(),
+              () => {}
+            );
+          }, 1800);
+          return;
+        }
+
         localStorage.setItem('baby-level-unlocked', String(this.levelManager.maxLevel));
         window.setTimeout(() => this.startFinalVictory(), 1800);
         return;
@@ -1072,6 +1147,9 @@ class Game {
         this.levelManager.maxLevel,
         () => this.startLevel(),
         () => {
+          if (isReplayMode()) {
+            return;
+          }
           const nextLevel = this.levelManager.level + 1;
           localStorage.setItem('baby-level-unlocked', String(nextLevel));
           this.levelManager.setLevel(nextLevel);

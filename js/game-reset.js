@@ -15,7 +15,8 @@
     'nose-map-animate',
     'baby-map-animate',
     'game-audio-unlocked',
-    'game-bgm-track'
+    'game-bgm-track',
+    'game-replay-mode'
   ];
 
   function resetGameProgress() {

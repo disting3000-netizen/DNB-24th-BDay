@@ -26,6 +26,7 @@
       <h1 class="game-title">Operation Baby Launcher</h1>
       <p class="game-subtitle">Launch the baby safely into the pillow.</p>
       <p class="level-indicator" id="level-indicator">Level 1 / 5</p>
+      <button class="btn btn--compact" id="btn-change-level" type="button" hidden>Change Level</button>
     </header>
 
     <div class="hud" id="drag-hud" hidden>
@@ -53,6 +54,14 @@
     </div>
   </div>
 
+  <div class="level-select" id="level-select" hidden>
+    <div class="level-select__panel">
+      <h2 class="level-select__title">Select Level</h2>
+      <div class="level-select__grid" id="level-select-grid"></div>
+      <button class="btn" id="level-select-map" type="button">Back to Map</button>
+    </div>
+  </div>
+
   <div class="victory-overlay victory-overlay--hidden" id="victory-overlay">
     <img
       class="victory-sticker"
@@ -68,6 +77,7 @@
 
   <script src="js/scene-layout.js"></script>
   <script src="audio/game-audio.js"></script>
+  <script src="js/game-replay.js"></script>
   <script src="baby/script.js" defer></script>
 </body>
 </html>
