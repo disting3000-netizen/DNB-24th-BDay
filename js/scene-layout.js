@@ -4,16 +4,41 @@
 
   let scale = 1;
   let stageEl = null;
+  let wrapperEl = null;
 
   function applyScale() {
-    if (!stageEl) {
+    if (!stageEl || !wrapperEl) {
       return scale;
     }
 
-    scale = Math.min(global.innerWidth / DESIGN_W, global.innerHeight / DESIGN_H);
+    const viewportW = global.innerWidth;
+    const viewportH = global.innerHeight;
+
+    // Cover the viewport so the scene fills the screen (may crop edges slightly).
+    scale = Math.max(viewportW / DESIGN_W, viewportH / DESIGN_H);
+
+    wrapperEl.style.width = `${DESIGN_W * scale}px`;
+    wrapperEl.style.height = `${DESIGN_H * scale}px`;
     stageEl.style.transform = `scale(${scale})`;
+
     global.document.documentElement.style.setProperty('--scene-scale', String(scale));
+    global.document.documentElement.style.setProperty('--design-w', `${DESIGN_W}px`);
+    global.document.documentElement.style.setProperty('--design-h', `${DESIGN_H}px`);
+
     return scale;
+  }
+
+  function wrapStage(stage) {
+    const viewport = stage.parentElement;
+    if (!viewport) {
+      return stage;
+    }
+
+    const wrapper = global.document.createElement('div');
+    wrapper.className = 'scene-scale-wrapper';
+    viewport.replaceChild(wrapper, stage);
+    wrapper.appendChild(stage);
+    return wrapper;
   }
 
   function init(stageId = 'scene-stage') {
@@ -21,6 +46,15 @@
     if (!stageEl) {
       return;
     }
+
+    wrapperEl = stageEl.parentElement;
+    if (!wrapperEl.classList.contains('scene-scale-wrapper')) {
+      wrapperEl = wrapStage(stageEl);
+    }
+
+    stageEl.style.width = `${DESIGN_W}px`;
+    stageEl.style.height = `${DESIGN_H}px`;
+    stageEl.style.transformOrigin = '0 0';
 
     global.document.body.classList.add('has-scene-layout');
     applyScale();

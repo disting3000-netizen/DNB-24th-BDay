@@ -1,4 +1,4 @@
-/* Uniform 1920×1080 design stage — scales to fit any viewport with letterboxing */
+/* Uniform 1920×1080 design stage — scales to fill the viewport */
 
 html,
 body {
@@ -14,16 +14,23 @@ body.has-scene-layout {
 .scene-viewport {
   position: fixed;
   inset: 0;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
+}
+
+.scene-scale-wrapper {
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
 .scene-stage {
   position: relative;
-  width: 1920px;
-  height: 1080px;
-  transform-origin: center center;
+  width: var(--design-w, 1920px);
+  height: var(--design-h, 1080px);
+  transform-origin: 0 0;
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -38,16 +45,16 @@ body.has-scene-layout {
 .scene-stage .scene-content {
   position: absolute;
   inset: 0;
-  width: 1920px;
-  height: 1080px;
+  width: var(--design-w, 1920px);
+  height: var(--design-h, 1080px);
   z-index: 1;
 }
 
 .scene-stage .map-path {
   position: absolute;
   inset: 0;
-  width: 1920px;
-  height: 1080px;
+  width: var(--design-w, 1920px);
+  height: var(--design-h, 1080px);
 }
 
 .scene-stage--cover-bg {
@@ -64,7 +71,7 @@ body.has-scene-layout {
 .scene-stage #game-canvas {
   position: absolute;
   inset: 0;
-  width: 1920px;
-  height: 1080px;
+  width: var(--design-w, 1920px);
+  height: var(--design-h, 1080px);
   display: block;
 }

@@ -3,9 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="refresh" content="0; url=Begin.html">
   <title>DNB 24th Birthday</title>
-  <script>location.replace('Begin.html');</script>
+  <script src="audio/game-audio.js"></script>
+  <script>
+    GameAudio.initBgm('goofy_bgm.mp3');
+    location.replace('Begin.html');
+  </script>
 </head>
 <body>
   <p><a href="Begin.html">Start the game</a></p>

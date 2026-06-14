@@ -66,7 +66,7 @@
     }
 
     .sticker--in-fridge {
-      z-index: 4;
+      z-index: 2;
     }
 
     .sticker--draggable:not(.sticker--in-fridge) {
@@ -92,10 +92,10 @@
       left: 0%;
     }
 
-    .sticker--eggs { --sticker-size: 105px; top: 44%; left: 87%; }
+    .sticker--eggs { --sticker-size: 105px; top: 48%; left: 87%; }
     .sticker--milk { --sticker-size: 70px; top: 52%; left: 90%; }
     .sticker--butter { --sticker-size: 110px; top: 65%; left: 85%; }
-    .sticker--bowl { --sticker-size: 225px; top: 60%; left: 50%; transform: translateX(-50%); }
+    .sticker--bowl { --sticker-size: 300px; top: 50%; left: 50%; transform: translateX(-50%); }
     .sticker--whisk {
       --sticker-size: 100px;
       --whisk-rotate: -49deg;
@@ -104,7 +104,7 @@
       transform: rotate(var(--whisk-rotate));
       transform-origin: center center;
     }
-    .sticker--cocoa { --sticker-size: 105px; top: 12%; left: 43%; }
+    .sticker--cocoa { --sticker-size: 105px; top: 18%; left: 43%; }
     .sticker--mold { --sticker-size: 80px; top: 45.5%; left: 30%; }
     .sticker--mixed { --sticker-size: 160px; }
     .sticker--filled-mold { --sticker-size: 120px; }
@@ -311,7 +311,7 @@
 <body>
   <ul class="instructions instructions--hidden" id="instructions" aria-live="polite"></ul>
 
-  <div class="intro-overlay" id="intro-overlay">
+  <div class="intro-overlay intro-overlay--hidden" id="intro-overlay">
     <div class="intro-box" id="intro-box">
       <p class="intro-text">
         <span id="intro-typewriter"></span><span id="intro-cursor" class="intro-cursor"></span>
@@ -938,6 +938,10 @@
       unlockScene();
     }
 
+    function showIntro() {
+      introOverlay.classList.remove('intro-overlay--hidden');
+    }
+
     function completeIntro() {
       localStorage.setItem(STORAGE.intro, 'true');
       hideIntro();
@@ -964,7 +968,9 @@
 
       function typeNextCharacter() {
         if (charIndex < text.length) {
-          introTypewriter.textContent += text.charAt(charIndex);
+          const char = text.charAt(charIndex);
+          introTypewriter.textContent += char;
+          GameAudio.playTypeChar(char);
           charIndex += 1;
           window.setTimeout(typeNextCharacter, TYPE_SPEED_MS);
           return;
@@ -999,6 +1005,8 @@
         renderInstructions();
         return;
       }
+
+      showIntro();
       startIntroMessage();
       introOverlay.addEventListener('click', advanceIntro);
       introBox.addEventListener('click', (event) => {

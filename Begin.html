@@ -322,10 +322,12 @@
     GameAudio.initBgm('goofy_bgm.mp3');
 
     document.getElementById('start-button').addEventListener('click', () => {
+      GameAudio.unlockAudio();
       window.location.href = 'Map.html';
     });
 
     document.getElementById('nah-button').addEventListener('click', () => {
+      GameAudio.unlockAudio();
       window.location.href = 'Exit.html';
     });
 

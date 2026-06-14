@@ -357,7 +357,7 @@
   </style>
 </head>
 <body>
-  <div class="intro-overlay" id="intro-overlay">
+  <div class="intro-overlay intro-overlay--hidden" id="intro-overlay">
     <div class="intro-box" id="intro-box">
       <p class="intro-text">
         <span id="intro-typewriter"></span><span id="intro-cursor" class="intro-cursor"></span>
@@ -846,7 +846,9 @@
 
       function typeNextCharacter() {
         if (charIndex < text.length) {
-          introTypewriter.textContent += text.charAt(charIndex);
+          const char = text.charAt(charIndex);
+          introTypewriter.textContent += char;
+          GameAudio.playTypeChar(char);
           charIndex += 1;
           window.setTimeout(typeNextCharacter, TYPE_SPEED_MS);
           return;
@@ -882,6 +884,7 @@
         return;
       }
 
+      introOverlay.classList.remove('intro-overlay--hidden');
       lockMap();
       startIntroMessage();
       introOverlay.addEventListener('click', advanceIntro);
