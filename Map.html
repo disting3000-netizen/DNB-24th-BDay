@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Map</title>
+  <link rel="stylesheet" href="css/scene-layout.css">
   <style>
     * {
       margin: 0;
@@ -22,9 +23,6 @@
     }
 
     .scene-background {
-      position: fixed;
-      inset: 0;
-      z-index: 0;
       overflow: hidden;
       background: #3b0764;
     }
@@ -91,15 +89,9 @@
     .scene-content {
       position: relative;
       z-index: 1;
-      width: 100%;
-      height: 100%;
     }
 
     .map-path {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
       pointer-events: none;
       z-index: 0;
     }
@@ -134,7 +126,7 @@
       top: 308px;
       left: 16px;
       z-index: 3;
-      width: min(300px, 34vw);
+      width: 300px;
       padding: 14px 18px;
       border: 2px solid rgba(249, 233, 154, 0.75);
       border-radius: 10px;
@@ -287,7 +279,7 @@
     .sticker--cauldron {
       --sticker-size: 100px;
       top: 50px;
-      right: 900px;
+      left: 920px;
     }
 
     .sticker--start {
@@ -374,12 +366,14 @@
     </div>
   </div>
 
-  <div class="scene-background" aria-hidden="true">
-    <div class="scene-background__gradient"></div>
-    <div class="scene-background__vignette"></div>
-  </div>
+  <div class="scene-viewport">
+    <div class="scene-stage" id="scene-stage">
+      <div class="scene-background" aria-hidden="true">
+        <div class="scene-background__gradient"></div>
+        <div class="scene-background__vignette"></div>
+      </div>
 
-  <div class="scene-content is-locked" id="scene-content">
+      <div class="scene-content is-locked" id="scene-content">
   <svg class="map-path" aria-hidden="true">
     <path class="map-path__line" id="game-path"></path>
   </svg>
@@ -453,10 +447,14 @@
     src="stickers/START_sticker.png"
     alt="Start"
   >
+      </div>
+    </div>
   </div>
 
+  <script src="js/scene-layout.js"></script>
   <script src="audio/game-audio.js"></script>
   <script>
+    SceneLayout.init();
     GameAudio.initBgm('goofy_bgm.mp3');
   </script>
   <script>
@@ -593,12 +591,8 @@
     }
 
     function getStickerCenter(id) {
-      const element = document.getElementById(id);
-      const rect = element.getBoundingClientRect();
-      return {
-        x: rect.left + rect.width / 2,
-        y: rect.top + rect.height / 2
-      };
+      const point = SceneLayout.stagePointFromElement(document.getElementById(id));
+      return { x: point.centerX, y: point.centerY };
     }
 
     function buildCurvedPath(points, tension = 0.35, segmentCount = points.length - 1, contextPoints = points) {
@@ -683,7 +677,7 @@
       const path = document.getElementById('game-path');
       const points = pathOrder.map(getStickerCenter);
 
-      svg.setAttribute('viewBox', `0 0 ${window.innerWidth} ${window.innerHeight}`);
+      svg.setAttribute('viewBox', `0 0 ${SceneLayout.DESIGN_W} ${SceneLayout.DESIGN_H}`);
 
       path.setAttribute('d', buildCurvedPath(points));
     }
@@ -691,12 +685,10 @@
     function positionDnbOnStart() {
       const start = document.getElementById('sticker-start');
       const dnbContainer = document.getElementById('dnb-container');
-      const startRect = start.getBoundingClientRect();
+      const startPoint = SceneLayout.stagePointFromElement(start);
 
       dnbContainer.style.transition = '';
-      dnbContainer.style.left = `${startRect.left + startRect.width / 2}px`;
-      dnbContainer.style.top = `${startRect.top + startRect.height / 2}px`;
-      dnbContainer.style.transform = 'translate(-50%, -50%)';
+      SceneLayout.setElementCenter(dnbContainer, startPoint.centerX, startPoint.centerY);
     }
 
     function setDestinationStickersEnabled(enabled) {

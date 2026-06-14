@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Fredoka:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/scene-layout.css">
   <style>
     * {
       margin: 0;
@@ -25,9 +26,6 @@
     }
 
     .scene-background {
-      position: fixed;
-      inset: 0;
-      z-index: 0;
       overflow: hidden;
       background: #3b0764;
     }
@@ -102,8 +100,6 @@
     .scene-content {
       position: relative;
       z-index: 1;
-      width: 100%;
-      height: 100%;
     }
 
     .title-block {
@@ -277,13 +273,15 @@
   </style>
 </head>
 <body>
-  <div class="scene-background" aria-hidden="true">
-    <div class="scene-background__gradient"></div>
-    <canvas class="scene-background__particles" id="particle-canvas"></canvas>
-    <div class="scene-background__vignette"></div>
-  </div>
+  <div class="scene-viewport">
+    <div class="scene-stage" id="scene-stage">
+      <div class="scene-background" aria-hidden="true">
+        <div class="scene-background__gradient"></div>
+        <canvas class="scene-background__particles" id="particle-canvas"></canvas>
+        <div class="scene-background__vignette"></div>
+      </div>
 
-  <div class="scene-content">
+      <div class="scene-content">
     <header class="title-block">
       <span class="title-line">Welcome to the</span>
       <span class="title-line title-line--main">ORIGINS OF DNB</span>
@@ -313,10 +311,14 @@
       src="stickers/Saurav_sticker.png"
       alt="Saurav"
     >
+      </div>
+    </div>
   </div>
 
+  <script src="js/scene-layout.js"></script>
   <script src="audio/game-audio.js"></script>
   <script>
+    SceneLayout.init();
     GameAudio.initBgm('goofy_bgm.mp3');
 
     document.getElementById('start-button').addEventListener('click', () => {
@@ -336,9 +338,9 @@
       const menuSafeZone = 320;
       const stickerSize = sauravSticker.offsetWidth || 140;
       const minX = menuSafeZone;
-      const maxX = window.innerWidth - stickerSize - padding;
+      const maxX = SceneLayout.DESIGN_W - stickerSize - padding;
       const minY = padding;
-      const maxY = window.innerHeight - stickerSize - padding;
+      const maxY = SceneLayout.DESIGN_H - stickerSize - padding;
 
       if (maxX <= minX || maxY <= minY) {
         return;
@@ -382,9 +384,9 @@
     }
 
     function resizeParticleCanvas() {
-      particleCanvas.width = window.innerWidth;
-      particleCanvas.height = window.innerHeight;
-      createParticles(Math.floor((window.innerWidth * window.innerHeight) / 14000));
+      particleCanvas.width = SceneLayout.DESIGN_W;
+      particleCanvas.height = SceneLayout.DESIGN_H;
+      createParticles(Math.floor((SceneLayout.DESIGN_W * SceneLayout.DESIGN_H) / 14000));
     }
 
     function drawParticles(timestamp) {

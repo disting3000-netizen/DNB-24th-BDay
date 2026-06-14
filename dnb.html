@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>The Finality of Arcanum</title>
+  <link rel="stylesheet" href="css/scene-layout.css">
   <style>
     * {
       margin: 0;
@@ -23,16 +24,16 @@
       background: #000000;
     }
 
-    body.has-cauldron {
+    .scene-stage--dnb {
       background-color: #140820;
+    }
+
+    .scene-stage--dnb.has-cauldron {
       background-image: url('stickers/arcane_cauldron.png');
-      background-repeat: no-repeat;
-      background-position: center center;
-      background-size: cover;
     }
 
     .scene-content {
-      position: fixed;
+      position: absolute;
       inset: 0;
       z-index: 1;
     }
@@ -142,7 +143,7 @@
 
     .ingredient-sticker {
       position: absolute;
-      width: min(150px, 18vw);
+      width: 150px;
       height: auto;
       user-select: none;
       pointer-events: none;
@@ -193,8 +194,8 @@
       position: absolute;
       top: 76%;
       left: 47.5%;
-      width: min(220px, 28vw);
-      height: min(150px, 20vh);
+      width: 220px;
+      height: 150px;
       transform: translate(-50%, -50%);
       background: transparent;
       border: none;
@@ -457,7 +458,9 @@
     </div>
   </div>
 
-  <main class="scene-content is-locked" id="scene-content">
+  <div class="scene-viewport">
+    <div class="scene-stage scene-stage--cover-bg scene-stage--dnb" id="scene-stage">
+      <main class="scene-content is-locked" id="scene-content">
     <img
       class="ingredient-sticker ingredient-sticker--dars"
       id="ingredient-dars"
@@ -480,7 +483,9 @@
       data-ingredient-id="baby"
     >
     <div class="cauldron-hotspot" id="cauldron-hotspot" aria-hidden="true"></div>
-  </main>
+      </main>
+    </div>
+  </div>
 
   <div class="hotspot-dialogue" id="hotspot-dialogue">
     <p class="hotspot-dialogue__text" id="hotspot-dialogue-text"></p>
@@ -515,8 +520,10 @@
     </div>
   </div>
 
+  <script src="js/scene-layout.js"></script>
   <script src="audio/game-audio.js"></script>
   <script>
+    SceneLayout.init();
     GameAudio.initBgm('mystic_bgm.mp3');
   </script>
   <script>
@@ -626,7 +633,7 @@
       introBox.classList.toggle('intro-box--arcane', !isBlack);
 
       if (!isBlack) {
-        document.body.classList.add('has-cauldron');
+        document.getElementById('scene-stage').classList.add('has-cauldron');
       }
     }
 
@@ -692,7 +699,7 @@
 
     function showProceedDialogue() {
       introOverlay.classList.add('intro-overlay--hidden');
-      document.body.classList.add('has-cauldron');
+      document.getElementById('scene-stage').classList.add('has-cauldron');
       showHotspotDialogue('Proceed to add the ingredients into the cauldron.', {
         clickToContinue: true,
         onDismiss: unlockDragPhase
@@ -727,10 +734,10 @@
     }
 
     function normalizeStickerPosition(sticker) {
-      const rect = sticker.getBoundingClientRect();
-      sticker.style.left = `${rect.left}px`;
-      sticker.style.top = `${rect.top}px`;
-      sticker.style.width = `${rect.width}px`;
+      const stage = SceneLayout.stagePointFromElement(sticker);
+      sticker.style.left = `${stage.x}px`;
+      sticker.style.top = `${stage.y}px`;
+      sticker.style.width = `${stage.width}px`;
     }
 
     function handleIngredientDrop(sticker) {
@@ -766,14 +773,17 @@
         event.preventDefault();
         sticker.setPointerCapture(event.pointerId);
         normalizeStickerPosition(sticker);
-        const rect = sticker.getBoundingClientRect();
-        const offsetX = event.clientX - rect.left;
-        const offsetY = event.clientY - rect.top;
+        const pointer = SceneLayout.clientToStage(event.clientX, event.clientY);
+        const stickerLeft = parseFloat(sticker.style.left) || 0;
+        const stickerTop = parseFloat(sticker.style.top) || 0;
+        const offsetX = pointer.x - stickerLeft;
+        const offsetY = pointer.y - stickerTop;
         sticker.classList.add('is-dragging');
 
         function moveAt(x, y) {
-          sticker.style.left = `${x - offsetX}px`;
-          sticker.style.top = `${y - offsetY}px`;
+          const point = SceneLayout.clientToStage(x, y);
+          sticker.style.left = `${point.x - offsetX}px`;
+          sticker.style.top = `${point.y - offsetY}px`;
         }
 
         function onPointerMove(moveEvent) {

@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Nose</title>
+  <link rel="stylesheet" href="css/scene-layout.css">
   <style>
     * {
       margin: 0;
@@ -19,19 +20,20 @@
 
     body {
       background-color: #1a0a2e;
+    }
+
+    .scene-stage--nose {
+      background-color: #1a0a2e;
       background-image: url('stickers/images/Nose/castle.jpg');
-      background-repeat: no-repeat;
-      background-position: center center;
-      background-size: cover;
       transition: background-image 0.6s ease;
     }
 
-    body.is-interior {
+    .scene-stage--nose.is-interior {
       background-image: url('stickers/images/Nose/interior.jpg');
     }
 
     .scene-content {
-      position: fixed;
+      position: absolute;
       inset: 0;
       z-index: 1;
     }
@@ -134,7 +136,7 @@
     }
 
     .sticker--gorgon {
-      --sticker-size: min(42vh, 360px);
+      --sticker-size: 360px;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
@@ -143,7 +145,7 @@
     }
 
     .pile-arrow {
-      position: fixed;
+      position: absolute;
       left: 9%;
       top: 34%;
       z-index: 3;
@@ -335,19 +337,25 @@
     </div>
   </div>
 
-  <div class="pile-arrow" id="pile-arrow" aria-hidden="true">↓</div>
-
   <button class="map-return" id="map-return" type="button">
     <span class="map-return__arrow" aria-hidden="true">→</span>
     <span>Click to go back to Map</span>
   </button>
 
-  <main class="scene-content" id="scene-content">
-    <button class="entry-hotspot" id="entry-hotspot" type="button" aria-label="Enter the castle"></button>
-  </main>
+  <div class="scene-viewport">
+    <div class="scene-stage scene-stage--cover-bg scene-stage--nose" id="scene-stage">
+      <div class="pile-arrow" id="pile-arrow" aria-hidden="true">↓</div>
 
+      <main class="scene-content" id="scene-content">
+        <button class="entry-hotspot" id="entry-hotspot" type="button" aria-label="Enter the castle"></button>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/scene-layout.js"></script>
   <script src="audio/game-audio.js"></script>
   <script>
+    SceneLayout.init();
     GameAudio.initBgm('dungeon_bgm.mp3');
   </script>
   <script>
@@ -600,8 +608,8 @@
     }
 
     function placeNosePile() {
-      const pileAnchorX = window.innerWidth * 0.09;
-      const pileAnchorY = window.innerHeight * 0.54;
+      const pileAnchorX = SceneLayout.DESIGN_W * 0.09;
+      const pileAnchorY = SceneLayout.DESIGN_H * 0.54;
 
       PILE_ITEMS.forEach((item) => {
         const sticker = createSticker(
@@ -770,30 +778,26 @@
     }
 
     function centerStickerOnHotspot(sticker, hotspot) {
-      const hotspotRect = hotspot.getBoundingClientRect();
+      const hotspotStage = SceneLayout.stagePointFromElement(hotspot);
       const width = sticker.offsetWidth;
       const height = sticker.offsetHeight;
-      sticker.style.left = `${hotspotRect.left + hotspotRect.width / 2 - width / 2}px`;
-      sticker.style.top = `${hotspotRect.top + hotspotRect.height / 2 - height / 2}px`;
+      sticker.style.left = `${hotspotStage.centerX - width / 2}px`;
+      sticker.style.top = `${hotspotStage.centerY - height / 2}px`;
     }
 
     function placeBaguetteTipOnHotspot(sticker, hotspot) {
-      const hotspotRect = hotspot.getBoundingClientRect();
-      const tipX = hotspotRect.left + hotspotRect.width / 2;
-      const tipY = hotspotRect.top + hotspotRect.height / 2;
-      sticker.style.left = `${tipX}px`;
-      sticker.style.top = `${tipY - sticker.offsetHeight / 2}px`;
+      const hotspotStage = SceneLayout.stagePointFromElement(hotspot);
+      sticker.style.left = `${hotspotStage.centerX}px`;
+      sticker.style.top = `${hotspotStage.centerY - sticker.offsetHeight / 2}px`;
     }
 
     function placeLightbulbMetalOnHotspot(sticker, hotspot) {
       sticker.classList.add('sticker--flipped');
-      const hotspotRect = hotspot.getBoundingClientRect();
-      const tipX = hotspotRect.left + hotspotRect.width / 2;
-      const tipY = hotspotRect.top + hotspotRect.height / 2;
+      const hotspotStage = SceneLayout.stagePointFromElement(hotspot);
       const width = sticker.offsetWidth;
       const height = sticker.offsetHeight;
-      sticker.style.left = `${tipX - width / 2}px`;
-      sticker.style.top = `${tipY - height * LIGHTBULB_METAL_ANCHOR_RATIO}px`;
+      sticker.style.left = `${hotspotStage.centerX - width / 2}px`;
+      sticker.style.top = `${hotspotStage.centerY - height * LIGHTBULB_METAL_ANCHOR_RATIO}px`;
     }
 
     function placeBananaMustacheOnHotspot(sticker, hotspot) {
@@ -867,7 +871,7 @@
       lockScene();
 
       const gorgonSticker = document.getElementById('gorgon-sticker');
-      const gorgonRect = gorgonSticker.getBoundingClientRect();
+      const gorgonStage = SceneLayout.stagePointFromElement(gorgonSticker);
       const startSize = 80;
 
       legendaryNoseSticker = createSticker(
@@ -877,8 +881,8 @@
         'Legendary nose'
       );
       legendaryNoseSticker.style.setProperty('--sticker-size', `${startSize}px`);
-      legendaryNoseSticker.style.left = `${gorgonRect.left + gorgonRect.width / 2 - startSize / 2}px`;
-      legendaryNoseSticker.style.top = `${gorgonRect.top + gorgonRect.height / 2 - startSize / 2}px`;
+      legendaryNoseSticker.style.left = `${gorgonStage.centerX - startSize / 2}px`;
+      legendaryNoseSticker.style.top = `${gorgonStage.centerY - startSize / 2}px`;
       sceneContent.appendChild(legendaryNoseSticker);
 
       victoryAudio.currentTime = 0;
@@ -886,10 +890,10 @@
 
       await wait(200);
 
-      const targetSize = Math.min(window.innerWidth, window.innerHeight) * 0.42;
+      const targetSize = Math.min(SceneLayout.DESIGN_W, SceneLayout.DESIGN_H) * 0.42;
       legendaryNoseSticker.style.transition = 'left 2.2s ease, top 2.2s ease, width 2.2s ease';
-      legendaryNoseSticker.style.left = `${window.innerWidth / 2 - targetSize / 2}px`;
-      legendaryNoseSticker.style.top = `${window.innerHeight / 2 - targetSize / 2}px`;
+      legendaryNoseSticker.style.left = `${SceneLayout.DESIGN_W / 2 - targetSize / 2}px`;
+      legendaryNoseSticker.style.top = `${SceneLayout.DESIGN_H / 2 - targetSize / 2}px`;
       legendaryNoseSticker.style.setProperty('--sticker-size', `${targetSize}px`);
 
       await wait(2300);
@@ -900,8 +904,8 @@
 
     function placeStickerOnRight(sticker) {
       const width = sticker.offsetWidth;
-      const x = window.innerWidth - width - RIGHT_SIDE_MARGIN_PX;
-      const y = window.innerHeight * RIGHT_STACK_START_RATIO
+      const x = SceneLayout.DESIGN_W - width - RIGHT_SIDE_MARGIN_PX;
+      const y = SceneLayout.DESIGN_H * RIGHT_STACK_START_RATIO
         + discardedNoseCount * RIGHT_STACK_ROW_HEIGHT_PX;
       sticker.style.left = `${x}px`;
       sticker.style.top = `${y}px`;
@@ -986,7 +990,7 @@
 
     function enterCastle() {
       advanceInstruction();
-      document.body.classList.add('is-interior');
+      document.getElementById('scene-stage').classList.add('is-interior');
       entryHotspot.remove();
       placeGorgon();
       placeGorgonHotspot();
@@ -995,9 +999,9 @@
     }
 
     function normalizeStickerPosition(sticker) {
-      const rect = sticker.getBoundingClientRect();
-      sticker.style.left = `${rect.left}px`;
-      sticker.style.top = `${rect.top}px`;
+      const stage = SceneLayout.stagePointFromElement(sticker);
+      sticker.style.left = `${stage.x}px`;
+      sticker.style.top = `${stage.y}px`;
     }
 
     function bindDraggable(sticker) {
@@ -1013,14 +1017,17 @@
 
     function startDrag(sticker, clientX, clientY) {
       normalizeStickerPosition(sticker);
-      const rect = sticker.getBoundingClientRect();
-      const offsetX = clientX - rect.left;
-      const offsetY = clientY - rect.top;
+      const pointer = SceneLayout.clientToStage(clientX, clientY);
+      const stickerLeft = parseFloat(sticker.style.left) || 0;
+      const stickerTop = parseFloat(sticker.style.top) || 0;
+      const offsetX = pointer.x - stickerLeft;
+      const offsetY = pointer.y - stickerTop;
       sticker.classList.add('is-dragging');
 
       function moveAt(x, y) {
-        sticker.style.left = `${x - offsetX}px`;
-        sticker.style.top = `${y - offsetY}px`;
+        const point = SceneLayout.clientToStage(x, y);
+        sticker.style.left = `${point.x - offsetX}px`;
+        sticker.style.top = `${point.y - offsetY}px`;
       }
 
       function onPointerMove(event) {

@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dars</title>
+  <link rel="stylesheet" href="css/scene-layout.css">
   <style>
     * {
       margin: 0;
@@ -18,20 +19,21 @@
     }
 
     body {
+      background-color: #140028;
+    }
+
+    .scene-stage--dars {
       background-color: purple;
       background-image: url('stickers/images/DARS/kitchen.png');
-      background-repeat: no-repeat;
-      background-position: center center;
-      background-size: cover;
+    }
+
+    body.is-dimmed .scene-viewport {
+      filter: brightness(0.55);
       transition: filter 0.8s ease;
     }
 
-    body.is-dimmed {
-      filter: brightness(0.55);
-    }
-
     .scene-content {
-      position: fixed;
+      position: absolute;
       inset: 0;
       z-index: 1;
       pointer-events: none;
@@ -331,7 +333,9 @@
     <span>Click to go back to Map</span>
   </button>
 
-  <main class="scene-content is-locked" id="scene-content">
+  <div class="scene-viewport">
+    <div class="scene-stage scene-stage--cover-bg scene-stage--dars" id="scene-stage">
+      <main class="scene-content is-locked" id="scene-content">
     <img class="sticker sticker--static sticker--microwave" id="microwave-sticker" src="stickers/images/DARS/microwave_sticker.png" alt="Microwave">
     <img class="sticker sticker--draggable sticker--in-fridge sticker--eggs" id="eggs-sticker" data-sticker-id="eggs" src="stickers/images/DARS/eggs_sticker.png" alt="Eggs">
     <img class="sticker sticker--draggable sticker--in-fridge sticker--milk" id="milk-sticker" data-sticker-id="milk" src="stickers/images/DARS/milk_sticker.png" alt="Milk">
@@ -341,10 +345,14 @@
     <img class="sticker sticker--draggable sticker--cocoa" id="cocoa-sticker" data-sticker-id="cocoa" src="stickers/images/DARS/cocoa_powder_sticker.png" alt="Cocoa powder">
     <img class="sticker sticker--draggable sticker--bowl" id="bowl-sticker" data-sticker-id="bowl" src="stickers/images/DARS/empty_bowl_sticker.png" alt="Empty bowl">
     <img class="sticker sticker--static sticker--fridge" id="fridge-sticker" src="stickers/images/DARS/fridge_sticker.png" alt="Fridge">
-  </main>
+      </main>
+    </div>
+  </div>
 
+  <script src="js/scene-layout.js"></script>
   <script src="audio/game-audio.js"></script>
   <script>
+    SceneLayout.init();
     GameAudio.initBgm('cooking_show_bgm.mp3');
   </script>
   <script>
@@ -515,19 +523,30 @@
     }
 
     function normalizeStickerPosition(sticker) {
-      const rect = sticker.getBoundingClientRect();
-      sticker.style.left = `${rect.left}px`;
-      sticker.style.top = `${rect.top}px`;
+      const stage = SceneLayout.stagePointFromElement(sticker);
+      sticker.style.left = `${stage.x}px`;
+      sticker.style.top = `${stage.y}px`;
       applyStickerTransform(sticker);
     }
 
     function centerStickerOnTarget(sticker, target) {
-      const targetRect = target.getBoundingClientRect();
+      const targetStage = SceneLayout.stagePointFromElement(target);
       const width = sticker.offsetWidth;
       const height = sticker.offsetHeight;
-      sticker.style.left = `${targetRect.left + targetRect.width / 2 - width / 2}px`;
-      sticker.style.top = `${targetRect.top + targetRect.height / 2 - height / 2}px`;
+      sticker.style.left = `${targetStage.centerX - width / 2}px`;
+      sticker.style.top = `${targetStage.centerY - height / 2}px`;
       applyStickerTransform(sticker);
+    }
+
+    function getStickerStagePosition(sticker) {
+      const left = parseFloat(sticker.style.left);
+      const top = parseFloat(sticker.style.top);
+      if (Number.isFinite(left) && Number.isFinite(top)) {
+        return { left: `${left}px`, top: `${top}px` };
+      }
+
+      const stage = SceneLayout.stagePointFromElement(sticker);
+      return { left: `${stage.x}px`, top: `${stage.y}px` };
     }
 
     function saveStickerPositions() {
@@ -536,10 +555,10 @@
         if (!sticker.isConnected) {
           return;
         }
-        const rect = sticker.getBoundingClientRect();
+        const position = getStickerStagePosition(sticker);
         positions[sticker.dataset.stickerId] = {
-          left: `${rect.left}px`,
-          top: `${rect.top}px`,
+          left: position.left,
+          top: position.top,
           itemState: sticker.dataset.itemState || 'stick'
         };
       });
@@ -716,7 +735,13 @@
 
       sources.forEach((sticker) => sticker.remove());
 
-      mixedChocolateSticker = createDynamicSticker('mixed', ASSETS.mixedChocolate, 'Mixed chocolate', centerX, centerY);
+      mixedChocolateSticker = createDynamicSticker(
+        'mixed',
+        ASSETS.mixedChocolate,
+        'Mixed chocolate',
+        SceneLayout.DESIGN_W / 2,
+        SceneLayout.DESIGN_H / 2
+      );
       sceneContent.appendChild(mixedChocolateSticker);
       bindDraggable(mixedChocolateSticker);
 
@@ -742,15 +767,19 @@
         return;
       }
 
-      const rect = moldSticker.getBoundingClientRect();
-      const x = rect.left + rect.width / 2;
-      const y = rect.top + rect.height / 2;
+      const moldStage = SceneLayout.stagePointFromElement(moldSticker);
 
       moldSticker.remove();
       mixedChocolateSticker.remove();
       mixedChocolateSticker = null;
 
-      filledMoldSticker = createDynamicSticker('filled-mold', ASSETS.filledMold, 'Filled chocolate mold', x, y);
+      filledMoldSticker = createDynamicSticker(
+        'filled-mold',
+        ASSETS.filledMold,
+        'Filled chocolate mold',
+        moldStage.centerX,
+        moldStage.centerY
+      );
       sceneContent.appendChild(filledMoldSticker);
       bindDraggable(filledMoldSticker);
 
@@ -806,18 +835,18 @@
       victoryAudio.currentTime = 0;
       victoryAudio.play().catch(() => {});
 
-      const fridgeRect = fridgeSticker.getBoundingClientRect();
-      darsSticker = createDynamicSticker('dars', ASSETS.dars, 'Dars chocolate bar', fridgeRect.left, fridgeRect.top);
+      const fridgeStage = SceneLayout.stagePointFromElement(fridgeSticker);
+      darsSticker = createDynamicSticker('dars', ASSETS.dars, 'Dars chocolate bar', fridgeStage.x, fridgeStage.y);
       darsSticker.style.setProperty('--sticker-size', '120px');
       darsSticker.style.zIndex = '25';
       sceneContent.appendChild(darsSticker);
 
       await wait(200);
 
-      const targetSize = Math.min(window.innerWidth, window.innerHeight) * 0.42;
+      const targetSize = Math.min(SceneLayout.DESIGN_W, SceneLayout.DESIGN_H) * 0.42;
       darsSticker.style.transition = 'left 2.2s ease, top 2.2s ease, width 2.2s ease';
-      darsSticker.style.left = `${window.innerWidth / 2 - targetSize / 2}px`;
-      darsSticker.style.top = `${window.innerHeight / 2 - targetSize / 2}px`;
+      darsSticker.style.left = `${SceneLayout.DESIGN_W / 2 - targetSize / 2}px`;
+      darsSticker.style.top = `${SceneLayout.DESIGN_H / 2 - targetSize / 2}px`;
       darsSticker.style.setProperty('--sticker-size', `${targetSize}px`);
 
       await wait(2300);
@@ -874,14 +903,17 @@
 
     function startDrag(sticker, clientX, clientY) {
       normalizeStickerPosition(sticker);
-      const rect = sticker.getBoundingClientRect();
-      const offsetX = clientX - rect.left;
-      const offsetY = clientY - rect.top;
+      const pointer = SceneLayout.clientToStage(clientX, clientY);
+      const stickerLeft = parseFloat(sticker.style.left) || 0;
+      const stickerTop = parseFloat(sticker.style.top) || 0;
+      const offsetX = pointer.x - stickerLeft;
+      const offsetY = pointer.y - stickerTop;
       sticker.classList.add('is-dragging');
 
       function moveAt(x, y) {
-        sticker.style.left = `${x - offsetX}px`;
-        sticker.style.top = `${y - offsetY}px`;
+        const point = SceneLayout.clientToStage(x, y);
+        sticker.style.left = `${point.x - offsetX}px`;
+        sticker.style.top = `${point.y - offsetY}px`;
         applyStickerTransform(sticker);
       }
 
@@ -989,8 +1021,8 @@
           'mixed',
           ASSETS.mixedChocolate,
           'Mixed chocolate',
-          window.innerWidth / 2,
-          window.innerHeight / 2
+          SceneLayout.DESIGN_W / 2,
+          SceneLayout.DESIGN_H / 2
         );
         sceneContent.appendChild(mixedChocolateSticker);
         bindDraggable(mixedChocolateSticker);
@@ -1008,8 +1040,8 @@
             'filled-mold',
             ASSETS.filledMold,
             'Filled chocolate mold',
-            window.innerWidth * 0.5,
-            window.innerHeight * 0.6
+            SceneLayout.DESIGN_W * 0.5,
+            SceneLayout.DESIGN_H * 0.6
           );
           sceneContent.appendChild(filledMoldSticker);
           bindDraggable(filledMoldSticker);
@@ -1022,11 +1054,17 @@
           filledMoldSticker = null;
         }
         if (!darsSticker) {
-          const targetSize = Math.min(window.innerWidth, window.innerHeight) * 0.42;
-          darsSticker = createDynamicSticker('dars', ASSETS.dars, 'Dars chocolate bar', window.innerWidth / 2, window.innerHeight / 2);
+          const targetSize = Math.min(SceneLayout.DESIGN_W, SceneLayout.DESIGN_H) * 0.42;
+          darsSticker = createDynamicSticker(
+            'dars',
+            ASSETS.dars,
+            'Dars chocolate bar',
+            SceneLayout.DESIGN_W / 2,
+            SceneLayout.DESIGN_H / 2
+          );
           darsSticker.style.setProperty('--sticker-size', `${targetSize}px`);
-          darsSticker.style.left = `${window.innerWidth / 2 - targetSize / 2}px`;
-          darsSticker.style.top = `${window.innerHeight / 2 - targetSize / 2}px`;
+          darsSticker.style.left = `${SceneLayout.DESIGN_W / 2 - targetSize / 2}px`;
+          darsSticker.style.top = `${SceneLayout.DESIGN_H / 2 - targetSize / 2}px`;
           sceneContent.appendChild(darsSticker);
         }
         positionMapReturnBelowDars();

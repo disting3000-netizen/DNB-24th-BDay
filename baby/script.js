@@ -998,8 +998,8 @@ class Game {
       return;
     }
 
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    const width = SceneLayout.DESIGN_W;
+    const height = SceneLayout.DESIGN_H;
     this.renderer.resize(width, height);
     this.anchorX = width * 0.15;
     this.anchorY = height * 0.62;
@@ -1090,8 +1090,8 @@ class Game {
     this.el.victoryOverlay.classList.add('is-active');
 
     const sticker = this.el.victorySticker;
-    const startSize = Math.min(window.innerWidth, window.innerHeight) * 0.18;
-    const endSize = Math.min(window.innerWidth, window.innerHeight) * 0.42;
+    const startSize = Math.min(SceneLayout.DESIGN_W, SceneLayout.DESIGN_H) * 0.18;
+    const endSize = Math.min(SceneLayout.DESIGN_W, SceneLayout.DESIGN_H) * 0.42;
 
     sticker.style.width = `${startSize}px`;
     sticker.style.transform = 'translate(0, 0)';
@@ -1194,6 +1194,8 @@ class Game {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+  SceneLayout.init();
+
   if (window.GameAudio) {
     window.GameAudio.initBgm('sky_bgm.mp3');
   }

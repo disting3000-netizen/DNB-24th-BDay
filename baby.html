@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Operation Baby Launcher</title>
+  <link rel="stylesheet" href="css/scene-layout.css">
   <link rel="stylesheet" href="baby/style.css">
 </head>
 <body>
@@ -46,7 +47,11 @@
     </div>
   </div>
 
-  <canvas id="game-canvas" aria-label="Operation Baby Launcher game canvas"></canvas>
+  <div class="scene-viewport">
+    <div class="scene-stage" id="scene-stage">
+      <canvas id="game-canvas" aria-label="Operation Baby Launcher game canvas"></canvas>
+    </div>
+  </div>
 
   <div class="victory-overlay victory-overlay--hidden" id="victory-overlay">
     <img
@@ -61,6 +66,7 @@
     </button>
   </div>
 
+  <script src="js/scene-layout.js"></script>
   <script src="audio/game-audio.js"></script>
   <script src="baby/script.js" defer></script>
 </body>

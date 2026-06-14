@@ -1,0 +1,70 @@
+/* Uniform 1920×1080 design stage — scales to fit any viewport with letterboxing */
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body.has-scene-layout {
+  background: #140028;
+}
+
+.scene-viewport {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.scene-stage {
+  position: relative;
+  width: 1920px;
+  height: 1080px;
+  transform-origin: center center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.scene-stage .scene-background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.scene-stage .scene-content {
+  position: absolute;
+  inset: 0;
+  width: 1920px;
+  height: 1080px;
+  z-index: 1;
+}
+
+.scene-stage .map-path {
+  position: absolute;
+  inset: 0;
+  width: 1920px;
+  height: 1080px;
+}
+
+.scene-stage--cover-bg {
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
+}
+
+.scene-stage .scene-background__particles {
+  width: 100%;
+  height: 100%;
+}
+
+.scene-stage #game-canvas {
+  position: absolute;
+  inset: 0;
+  width: 1920px;
+  height: 1080px;
+  display: block;
+}
