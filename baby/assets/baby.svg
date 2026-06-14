@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+  <circle cx="60" cy="60" r="52" fill="#ffd6a5" stroke="#c9854a" stroke-width="4"/>
+  <circle cx="44" cy="52" r="6" fill="#3b2f2f"/>
+  <circle cx="76" cy="52" r="6" fill="#3b2f2f"/>
+  <path d="M42 78 Q60 96 78 78" fill="none" stroke="#c94c4c" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="34" cy="68" r="8" fill="#ffb4b4" opacity="0.55"/>
+  <circle cx="86" cy="68" r="8" fill="#ffb4b4" opacity="0.55"/>
+  <text x="60" y="115" text-anchor="middle" font-size="8" fill="#666">baby</text>
+</svg>

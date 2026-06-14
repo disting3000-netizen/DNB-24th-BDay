@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="140" height="180" viewBox="0 0 140 180">
+  <path d="M70 20 L30 150 L45 150 L70 70 L95 150 L110 150 Z" fill="#8b5a2b" stroke="#5c3d1e" stroke-width="4" stroke-linejoin="round"/>
+  <rect x="62" y="10" width="16" height="24" rx="4" fill="#a96d36"/>
+  <text x="70" y="175" text-anchor="middle" font-size="8" fill="#666">slingshot</text>
+</svg>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exit</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      background-color: purple;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .exit-text {
+      color: #ffffff;
+      font-size: 2rem;
+      text-align: center;
+      padding: 24px;
+      max-width: 90vw;
+    }
+
+    .exit-text__cursor {
+      display: inline-block;
+      width: 2px;
+      margin-left: 2px;
+      background-color: #ffffff;
+      animation: blink 0.8s step-end infinite;
+      vertical-align: text-bottom;
+      height: 1.1em;
+    }
+
+    .exit-text__cursor--hidden {
+      visibility: hidden;
+    }
+
+    @keyframes blink {
+      0%, 100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <p class="exit-text">
+    <span id="typewriter-text"></span><span id="typewriter-cursor" class="exit-text__cursor"></span>
+  </p>
+
+  <!-- Voice recording: audio/exit-voice.mp4 -->
+  <audio id="exit-voice" src="audio/exit-voice.mp4" preload="auto"></audio>
+
+  <script src="audio/game-audio.js"></script>
+  <script>
+    const EXIT_MESSAGE = 'Click Me';
+    const TYPE_SPEED_MS = 65;
+    const CLOSE_DELAY_MS = 100;
+
+    const textElement = document.getElementById('typewriter-text');
+    const cursorElement = document.getElementById('typewriter-cursor');
+    const voiceElement = document.getElementById('exit-voice');
+
+    let textComplete = false;
+    let voiceComplete = false;
+    let closeScheduled = false;
+
+    function tryCloseGame() {
+      if (!textComplete || !voiceComplete || closeScheduled) {
+        return;
+      }
+
+      closeScheduled = true;
+
+      setTimeout(() => {
+        window.close();
+
+        if (!window.closed) {
+          window.open('', '_self');
+          window.close();
+        }
+      }, CLOSE_DELAY_MS);
+    }
+
+    function markVoiceComplete() {
+      if (voiceComplete) {
+        return;
+      }
+
+      voiceComplete = true;
+      tryCloseGame();
+    }
+
+    function typeMessage() {
+      let charIndex = 0;
+      const text = GameAudio.replacePlayerText(EXIT_MESSAGE);
+
+      function typeNextCharacter() {
+        if (charIndex < text.length) {
+          const char = text.charAt(charIndex);
+          textElement.textContent += char;
+          GameAudio.playTypeChar(char);
+          charIndex += 1;
+          setTimeout(typeNextCharacter, TYPE_SPEED_MS);
+          return;
+        }
+
+        textComplete = true;
+        cursorElement.classList.add('exit-text__cursor--hidden');
+        tryCloseGame();
+      }
+
+      typeNextCharacter();
+    }
+
+    function startVoice() {
+      voiceElement.addEventListener('ended', markVoiceComplete);
+
+      voiceElement.addEventListener('error', () => {
+        console.warn('Exit voice recording not found. Add your file at audio/exit-voice.mp4');
+      });
+
+      const playPromise = voiceElement.play();
+
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          console.warn('Exit voice autoplay blocked. Waiting for a click to play.');
+          document.body.addEventListener('click', () => {
+            voiceElement.play().catch(() => {
+              markVoiceComplete();
+            });
+          }, { once: true });
+        });
+      }
+    }
+
+    window.addEventListener('load', () => {
+      typeMessage();
+      startVoice();
+    });
+  </script>
+</body>
+</html>

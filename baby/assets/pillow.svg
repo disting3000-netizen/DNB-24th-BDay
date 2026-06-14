@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="140" viewBox="0 0 220 140">
+  <ellipse cx="110" cy="70" rx="100" ry="58" fill="#ffe8f0" stroke="#d48aa6" stroke-width="5"/>
+  <ellipse cx="110" cy="70" rx="78" ry="40" fill="#fff5f9" opacity="0.8"/>
+  <text x="110" y="135" text-anchor="middle" font-size="8" fill="#666">pillow</text>
+</svg>

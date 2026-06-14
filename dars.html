@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dars</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      background-color: purple;
+      background-image: url('stickers/images/DARS/kitchen.png');
+      background-repeat: no-repeat;
+      background-position: center center;
+      background-size: cover;
+      transition: filter 0.8s ease;
+    }
+
+    body.is-dimmed {
+      filter: brightness(0.55);
+    }
+
+    .scene-content {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .sticker {
+      position: absolute;
+      max-width: var(--sticker-size);
+      width: var(--sticker-size);
+      height: auto;
+      user-select: none;
+      transition: left 0.35s ease, top 0.35s ease, transform 0.35s ease, width 0.35s ease, opacity 0.35s ease;
+    }
+
+    .sticker--static {
+      pointer-events: none;
+      cursor: default;
+    }
+
+    .sticker--draggable {
+      pointer-events: auto;
+      cursor: grab;
+      touch-action: none;
+    }
+
+    .sticker--draggable.is-dragging {
+      cursor: grabbing;
+      z-index: 10;
+      transition: none;
+    }
+
+    .sticker--in-fridge {
+      z-index: 4;
+    }
+
+    .sticker--draggable:not(.sticker--in-fridge) {
+      z-index: 2;
+    }
+
+    .sticker--in-fridge:hover {
+      outline: 3px solid #f9e99a;
+      outline-offset: 4px;
+      filter: drop-shadow(0 0 10px rgba(249, 233, 154, 0.85));
+    }
+
+    .sticker--fridge {
+      --sticker-size: 350px;
+      top: 15%;
+      right: 0%;
+      z-index: 3;
+    }
+
+    .sticker--microwave {
+      --sticker-size: 350px;
+      top: 47%;
+      left: 0%;
+    }
+
+    .sticker--eggs { --sticker-size: 105px; top: 44%; left: 87%; }
+    .sticker--milk { --sticker-size: 70px; top: 52%; left: 90%; }
+    .sticker--butter { --sticker-size: 110px; top: 65%; left: 85%; }
+    .sticker--bowl { --sticker-size: 225px; top: 60%; left: 50%; transform: translateX(-50%); }
+    .sticker--whisk {
+      --sticker-size: 100px;
+      --whisk-rotate: -49deg;
+      top: 47.5%;
+      left: 35%;
+      transform: rotate(var(--whisk-rotate));
+      transform-origin: center center;
+    }
+    .sticker--cocoa { --sticker-size: 105px; top: 12%; left: 43%; }
+    .sticker--mold { --sticker-size: 80px; top: 45.5%; left: 30%; }
+    .sticker--mixed { --sticker-size: 160px; }
+    .sticker--filled-mold { --sticker-size: 120px; }
+    .sticker--dars { --sticker-size: 200px; z-index: 20; }
+
+    .scene-content.is-locked .sticker--draggable {
+      pointer-events: none;
+      cursor: default;
+    }
+
+    .intro-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(20, 0, 40, 0.72);
+      cursor: pointer;
+    }
+
+    .intro-overlay--hidden { display: none; }
+
+    .intro-box {
+      width: min(720px, 92vw);
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 28px 32px;
+      border: 3px solid rgba(249, 233, 154, 0.85);
+      border-radius: 12px;
+      background: rgba(59, 7, 100, 0.94);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+      cursor: pointer;
+    }
+
+    .intro-text {
+      color: #ffffff;
+      font-size: 1.15rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    .intro-cursor {
+      display: inline-block;
+      width: 2px;
+      margin-left: 2px;
+      background-color: #ffffff;
+      animation: blink 0.8s step-end infinite;
+      vertical-align: text-bottom;
+      height: 1.1em;
+    }
+
+    .intro-cursor--hidden { visibility: hidden; }
+
+    .intro-continue {
+      margin-top: 18px;
+      color: #f9e99a;
+      font-size: 1rem;
+      font-style: italic;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .intro-continue--visible { opacity: 1; }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    .instructions {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 50;
+      max-width: min(340px, 46vw);
+      padding: 16px 18px 16px 30px;
+      border: 3px solid rgba(249, 233, 154, 0.85);
+      border-radius: 12px;
+      background: rgba(59, 7, 100, 0.94);
+      box-shadow: 0 10px 32px rgba(0, 0, 0, 0.45);
+      list-style: disc;
+      pointer-events: none;
+    }
+
+    .instructions--hidden { display: none; }
+
+    .instructions__item {
+      color: #ffffff;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+
+    .instructions__item:last-child { margin-bottom: 0; }
+
+    .instructions__item--done {
+      text-decoration: line-through;
+      opacity: 0.65;
+      color: #d8c4f0;
+    }
+
+    .instructions__item--current {
+      color: #f9e99a;
+      font-weight: 700;
+      text-shadow: 0 0 12px rgba(249, 233, 154, 0.35);
+    }
+
+    .mix-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+
+    .mix-overlay.is-active {
+      opacity: 1;
+      background: rgba(0, 0, 0, 0.35);
+    }
+
+    .mix-stage {
+      position: absolute;
+      inset: 0;
+    }
+
+    .mix-item {
+      position: absolute;
+      width: var(--mix-size);
+      height: auto;
+      transform-origin: center center;
+      pointer-events: none;
+      user-select: none;
+      transition: left 0.85s ease, top 0.85s ease, width 0.85s ease, opacity 0.85s ease;
+    }
+
+    .mix-item.is-shaking {
+      animation: bowl-shake 0.35s ease-in-out infinite;
+    }
+
+    .mix-item.is-whisking {
+      animation: whisk-rock 0.45s ease-in-out infinite;
+    }
+
+    @keyframes bowl-shake {
+      0%, 100% { transform: translateX(0) scale(var(--mix-scale, 1)); }
+      25% { transform: translateX(-10px) scale(var(--mix-scale, 1)); }
+      75% { transform: translateX(10px) scale(var(--mix-scale, 1)); }
+    }
+
+    @keyframes whisk-rock {
+      0%, 100% { transform: rotate(45deg) scale(var(--mix-scale, 1)); }
+      50% { transform: rotate(-45deg) scale(var(--mix-scale, 1)); }
+    }
+
+    .time-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 90;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.6);
+      pointer-events: none;
+    }
+
+    .time-overlay.is-active { display: flex; }
+
+    .time-overlay__image {
+      max-width: min(90vw, 640px);
+      max-height: 80vh;
+      object-fit: contain;
+    }
+
+    .map-return {
+      position: fixed;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 120;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 22px;
+      border: 2px solid #f9e99a;
+      border-radius: 999px;
+      background: rgba(59, 7, 100, 0.92);
+      color: #f9e99a;
+      font-size: 1rem;
+      cursor: pointer;
+      pointer-events: auto;
+    }
+
+    .map-return.is-visible { display: flex; }
+
+    .map-return__arrow {
+      font-size: 1.4rem;
+      line-height: 1;
+    }
+  </style>
+</head>
+<body>
+  <ul class="instructions instructions--hidden" id="instructions" aria-live="polite"></ul>
+
+  <div class="intro-overlay" id="intro-overlay">
+    <div class="intro-box" id="intro-box">
+      <p class="intro-text">
+        <span id="intro-typewriter"></span><span id="intro-cursor" class="intro-cursor"></span>
+      </p>
+      <p class="intro-continue" id="intro-continue">&lt;click to continue&gt;</p>
+    </div>
+  </div>
+
+  <div class="mix-overlay" id="mix-overlay">
+    <div class="mix-stage" id="mix-stage"></div>
+  </div>
+
+  <div class="time-overlay" id="time-overlay">
+    <img class="time-overlay__image" src="stickers/images/DARS/30_mins_later.jpg" alt="30 minutes later">
+  </div>
+
+  <button class="map-return" id="map-return" type="button">
+    <span class="map-return__arrow" aria-hidden="true">→</span>
+    <span>Click to go back to Map</span>
+  </button>
+
+  <main class="scene-content is-locked" id="scene-content">
+    <img class="sticker sticker--static sticker--microwave" id="microwave-sticker" src="stickers/images/DARS/microwave_sticker.png" alt="Microwave">
+    <img class="sticker sticker--draggable sticker--in-fridge sticker--eggs" id="eggs-sticker" data-sticker-id="eggs" src="stickers/images/DARS/eggs_sticker.png" alt="Eggs">
+    <img class="sticker sticker--draggable sticker--in-fridge sticker--milk" id="milk-sticker" data-sticker-id="milk" src="stickers/images/DARS/milk_sticker.png" alt="Milk">
+    <img class="sticker sticker--draggable sticker--in-fridge sticker--butter" id="butter-sticker" data-sticker-id="butter" data-item-state="stick" src="stickers/images/DARS/stick_of_butter_sticker.png" alt="Stick of butter">
+    <img class="sticker sticker--draggable sticker--whisk" id="whisk-sticker" data-sticker-id="whisk" src="stickers/images/DARS/whisk_sticker.png" alt="Whisk">
+    <img class="sticker sticker--draggable sticker--mold" id="mold-sticker" data-sticker-id="mold" src="stickers/images/DARS/choco_mold_sticker.png" alt="Chocolate mold">
+    <img class="sticker sticker--draggable sticker--cocoa" id="cocoa-sticker" data-sticker-id="cocoa" src="stickers/images/DARS/cocoa_powder_sticker.png" alt="Cocoa powder">
+    <img class="sticker sticker--draggable sticker--bowl" id="bowl-sticker" data-sticker-id="bowl" src="stickers/images/DARS/empty_bowl_sticker.png" alt="Empty bowl">
+    <img class="sticker sticker--static sticker--fridge" id="fridge-sticker" src="stickers/images/DARS/fridge_sticker.png" alt="Fridge">
+  </main>
+
+  <script src="audio/game-audio.js"></script>
+  <script>
+    GameAudio.initBgm('cooking_show_bgm.mp3');
+  </script>
+  <script>
+    const ASSETS = {
+      stickButter: 'stickers/images/DARS/stick_of_butter_sticker.png',
+      meltedButter: 'stickers/images/DARS/melted_butter_sticker.png',
+      mixedChocolate: 'stickers/images/DARS/mixed_chocolate_sticker.png',
+      filledMold: 'stickers/images/DARS/filled_choco_mold_sticker.png',
+      dars: 'stickers/images/DARS/dars_sticker.png',
+      microwaveDing: 'audio/microwave-ding.mp3',
+      thirtyMinutes: 'audio/30-minutes-later.mp3',
+      victory: 'audio/victory.mp3'
+    };
+
+    const STORAGE = {
+      intro: 'dars-intro-complete',
+      gamePhase: 'dars-game-phase',
+      positions: 'dars-sticker-positions'
+    };
+
+    const PHASE = {
+      MELT_BUTTER: 0,
+      MIX: 1,
+      POUR: 2,
+      FREEZE: 3,
+      VICTORY: 4
+    };
+
+    const INSTRUCTIONS = [
+      'Find the butter and melt it.',
+      'Add melted butter, milk, eggs, and cocoa powder to the bowl. Whisk them together with the whisk.',
+      'Drag the mixed chocolate onto the mold.',
+      'Freeze the chocolate for 30mins.',
+      'You are now a Baker!!!'
+    ];
+
+    const INTRO_MESSAGES = [
+      "Welcome to Willy Wonka's Chocolate Factory!",
+      "...is what I'd like to say but we broke and on a budget so",
+      "Welcome to Saurav's Rented Kitchen which he shares with 4 other Goobers!!!.",
+      'Your challenge is simple: Cook up a bar of chocolate to get the first arcane ingredient. Some items are interactable on this screen. Experiment by combining items together to achieve your goal.',
+      'Instructions on what to do next will appear on the top left, keep an eye out for them.',
+      'Good Luck DNB :D hehehehehhehe'
+    ];
+
+    const TYPE_SPEED_MS = 28;
+    const MIX_SCALE = 2.5;
+
+    const sceneContent = document.getElementById('scene-content');
+    const introOverlay = document.getElementById('intro-overlay');
+    const introBox = document.getElementById('intro-box');
+    const introTypewriter = document.getElementById('intro-typewriter');
+    const introCursor = document.getElementById('intro-cursor');
+    const introContinue = document.getElementById('intro-continue');
+    const instructionsPanel = document.getElementById('instructions');
+    const mixOverlay = document.getElementById('mix-overlay');
+    const mixStage = document.getElementById('mix-stage');
+    const timeOverlay = document.getElementById('time-overlay');
+    const mapReturn = document.getElementById('map-return');
+
+    const microwaveSticker = document.getElementById('microwave-sticker');
+    const fridgeSticker = document.getElementById('fridge-sticker');
+    const butterSticker = document.getElementById('butter-sticker');
+    const eggsSticker = document.getElementById('eggs-sticker');
+    const milkSticker = document.getElementById('milk-sticker');
+    const whiskSticker = document.getElementById('whisk-sticker');
+    const bowlSticker = document.getElementById('bowl-sticker');
+    const moldSticker = document.getElementById('mold-sticker');
+    const cocoaSticker = document.getElementById('cocoa-sticker');
+
+    const microwaveDing = new Audio(ASSETS.microwaveDing);
+    const thirtyMinutesAudio = new Audio(ASSETS.thirtyMinutes);
+    const victoryAudio = new Audio(ASSETS.victory);
+
+    let gamePhase = PHASE.MELT_BUTTER;
+    let instructionStep = 0;
+    let introMessageIndex = 0;
+    let introIsTyping = false;
+    let introWaitingForClick = false;
+    let isAnimating = false;
+    let mixedChocolateSticker = null;
+    let filledMoldSticker = null;
+    let darsSticker = null;
+
+    function saveGamePhase() {
+      localStorage.setItem(STORAGE.gamePhase, String(gamePhase));
+    }
+
+    function loadGamePhase() {
+      gamePhase = Number.parseInt(localStorage.getItem(STORAGE.gamePhase) || '0', 10);
+      instructionStep = Math.min(gamePhase, INSTRUCTIONS.length - 1);
+    }
+
+    function lockScene() {
+      sceneContent.classList.add('is-locked');
+    }
+
+    function unlockScene() {
+      if (!isAnimating) {
+        sceneContent.classList.remove('is-locked');
+      }
+    }
+
+    function renderInstructions() {
+      if (localStorage.getItem(STORAGE.intro) !== 'true') {
+        instructionsPanel.classList.add('instructions--hidden');
+        return;
+      }
+
+      instructionsPanel.classList.remove('instructions--hidden');
+      instructionsPanel.replaceChildren();
+
+      INSTRUCTIONS.forEach((text, index) => {
+        if (index > instructionStep) {
+          return;
+        }
+
+        const item = document.createElement('li');
+        item.className = 'instructions__item';
+        if (index < instructionStep) {
+          item.classList.add('instructions__item--done');
+        } else if (index === instructionStep) {
+          item.classList.add('instructions__item--current');
+        }
+        item.textContent = text;
+        instructionsPanel.appendChild(item);
+      });
+    }
+
+    function advanceInstructionStep() {
+      if (instructionStep >= INSTRUCTIONS.length - 1) {
+        return;
+      }
+      instructionStep += 1;
+      renderInstructions();
+    }
+
+    function advancePhase(nextPhase) {
+      gamePhase = nextPhase;
+      instructionStep = nextPhase;
+      saveGamePhase();
+      renderInstructions();
+    }
+
+    function isCenterOverTarget(sticker, target) {
+      const stickerRect = sticker.getBoundingClientRect();
+      const centerX = stickerRect.left + stickerRect.width / 2;
+      const centerY = stickerRect.top + stickerRect.height / 2;
+      const targetRect = target.getBoundingClientRect();
+      return (
+        centerX >= targetRect.left
+        && centerX <= targetRect.right
+        && centerY >= targetRect.top
+        && centerY <= targetRect.bottom
+      );
+    }
+
+    function getWhiskRotation(sticker) {
+      if (!sticker.classList.contains('sticker--whisk')) {
+        return null;
+      }
+      return getComputedStyle(sticker).getPropertyValue('--whisk-rotate').trim() || '0deg';
+    }
+
+    function applyStickerTransform(sticker) {
+      const whiskRotation = getWhiskRotation(sticker);
+      sticker.style.transform = whiskRotation ? `rotate(${whiskRotation})` : 'none';
+    }
+
+    function normalizeStickerPosition(sticker) {
+      const rect = sticker.getBoundingClientRect();
+      sticker.style.left = `${rect.left}px`;
+      sticker.style.top = `${rect.top}px`;
+      applyStickerTransform(sticker);
+    }
+
+    function centerStickerOnTarget(sticker, target) {
+      const targetRect = target.getBoundingClientRect();
+      const width = sticker.offsetWidth;
+      const height = sticker.offsetHeight;
+      sticker.style.left = `${targetRect.left + targetRect.width / 2 - width / 2}px`;
+      sticker.style.top = `${targetRect.top + targetRect.height / 2 - height / 2}px`;
+      applyStickerTransform(sticker);
+    }
+
+    function saveStickerPositions() {
+      const positions = {};
+      document.querySelectorAll('.sticker--draggable').forEach((sticker) => {
+        if (!sticker.isConnected) {
+          return;
+        }
+        const rect = sticker.getBoundingClientRect();
+        positions[sticker.dataset.stickerId] = {
+          left: `${rect.left}px`,
+          top: `${rect.top}px`,
+          itemState: sticker.dataset.itemState || 'stick'
+        };
+      });
+      localStorage.setItem(STORAGE.positions, JSON.stringify(positions));
+    }
+
+    function loadStickerPositions() {
+      const saved = localStorage.getItem(STORAGE.positions);
+      if (!saved) {
+        return;
+      }
+      const positions = JSON.parse(saved);
+      document.querySelectorAll('.sticker--draggable').forEach((sticker) => {
+        const savedPosition = positions[sticker.dataset.stickerId];
+        if (!savedPosition) {
+          return;
+        }
+        sticker.style.left = savedPosition.left;
+        sticker.style.top = savedPosition.top;
+        if (savedPosition.itemState === 'melted') {
+          sticker.src = ASSETS.meltedButter;
+          sticker.dataset.itemState = 'melted';
+          sticker.classList.remove('sticker--in-fridge');
+        }
+        applyStickerTransform(sticker);
+      });
+    }
+
+    function isMeltedButter() {
+      return butterSticker.dataset.itemState === 'melted';
+    }
+
+    function meltButter(playSound, skipPhaseAdvance = false) {
+      if (isMeltedButter()) {
+        return;
+      }
+
+      butterSticker.src = ASSETS.meltedButter;
+      butterSticker.alt = 'Melted butter';
+      butterSticker.dataset.itemState = 'melted';
+      butterSticker.classList.remove('sticker--in-fridge');
+      centerStickerOnTarget(butterSticker, microwaveSticker);
+
+      if (playSound) {
+        microwaveDing.currentTime = 0;
+        microwaveDing.play().catch(() => {});
+      }
+
+      if (!skipPhaseAdvance) {
+        advancePhase(PHASE.MIX);
+      }
+      saveStickerPositions();
+    }
+
+    function markInBowl(sticker) {
+      if (isCenterOverTarget(sticker, bowlSticker)) {
+        sticker.dataset.inBowl = 'true';
+        centerStickerOnTarget(sticker, bowlSticker);
+      }
+    }
+
+    function checkMixReady() {
+      if (gamePhase !== PHASE.MIX || isAnimating) {
+        return;
+      }
+
+      const butterReady = isMeltedButter() && butterSticker.dataset.inBowl === 'true';
+      const eggsReady = eggsSticker.dataset.inBowl === 'true';
+      const milkReady = milkSticker.dataset.inBowl === 'true';
+      const cocoaReady = cocoaSticker.dataset.inBowl === 'true';
+      const whiskReady = whiskSticker.dataset.inBowl === 'true';
+
+      if (butterReady && eggsReady && milkReady && cocoaReady && whiskReady) {
+        startMixingSequence();
+      }
+    }
+
+    function wait(ms) {
+      return new Promise((resolve) => window.setTimeout(resolve, ms));
+    }
+
+    function createMixClone(sourceSticker) {
+      const clone = document.createElement('img');
+      clone.className = 'mix-item';
+      clone.src = sourceSticker.src;
+      clone.alt = sourceSticker.alt;
+      const rect = sourceSticker.getBoundingClientRect();
+      clone.style.setProperty('--mix-size', `${rect.width}px`);
+      clone.style.setProperty('--mix-scale', '1');
+      clone.style.left = `${rect.left}px`;
+      clone.style.top = `${rect.top}px`;
+      mixStage.appendChild(clone);
+      return { clone, rect };
+    }
+
+    async function startMixingSequence() {
+      isAnimating = true;
+      lockScene();
+      document.body.classList.add('is-dimmed');
+      mixOverlay.classList.add('is-active');
+
+      const sources = [bowlSticker, whiskSticker, eggsSticker, milkSticker, butterSticker, cocoaSticker];
+      const clones = sources.map(createMixClone);
+
+      await wait(100);
+
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2;
+      const bowlTargetY = centerY + 40;
+      const whiskTargetY = centerY - 180;
+      const orbitRadius = 220;
+      const ingredientAngles = new Map([
+        [eggsSticker, -Math.PI / 2],
+        [milkSticker, Math.PI / 6],
+        [butterSticker, Math.PI],
+        [cocoaSticker, -Math.PI / 3]
+      ]);
+
+      clones.forEach(({ clone, rect }, index) => {
+        const source = sources[index];
+        const targetWidth = rect.width * MIX_SCALE;
+        clone.style.setProperty('--mix-size', `${targetWidth}px`);
+        clone.style.setProperty('--mix-scale', String(MIX_SCALE));
+
+        if (source === bowlSticker) {
+          clone.style.left = `${centerX - targetWidth / 2}px`;
+          clone.style.top = `${bowlTargetY - targetWidth / 2}px`;
+          clone.dataset.role = 'bowl';
+          return;
+        }
+
+        if (source === whiskSticker) {
+          clone.style.left = `${centerX - targetWidth / 2}px`;
+          clone.style.top = `${whiskTargetY - targetWidth / 2}px`;
+          clone.dataset.role = 'whisk';
+          return;
+        }
+
+        const angle = ingredientAngles.get(source) ?? 0;
+        const x = centerX + Math.cos(angle) * orbitRadius - targetWidth / 2;
+        const y = centerY + Math.sin(angle) * orbitRadius - targetWidth / 2;
+        clone.style.left = `${x}px`;
+        clone.style.top = `${y}px`;
+        clone.dataset.role = 'ingredient';
+      });
+
+      await wait(900);
+
+      const bowlClone = clones.find(({ clone }) => clone.dataset.role === 'bowl').clone;
+      const whiskClone = clones.find(({ clone }) => clone.dataset.role === 'whisk').clone;
+      bowlClone.classList.add('is-shaking');
+      whiskClone.classList.add('is-whisking');
+
+      const ingredientClones = clones.filter(({ clone }) => clone.dataset.role === 'ingredient');
+      const bowlRect = bowlClone.getBoundingClientRect();
+      const bowlCenterX = bowlRect.left + bowlRect.width / 2;
+      const bowlCenterY = bowlRect.top + bowlRect.height / 2;
+
+      ingredientClones.forEach(({ clone }, index) => {
+        window.setTimeout(() => {
+          clone.style.transition = 'left 1.4s ease-in, top 1.4s ease-in, width 1.4s ease-in, opacity 1.4s ease-in';
+          clone.style.left = `${bowlCenterX - 10}px`;
+          clone.style.top = `${bowlCenterY - 10}px`;
+          clone.style.setProperty('--mix-size', '12px');
+          clone.style.opacity = '0';
+        }, index * 180);
+      });
+
+      await wait(1800);
+
+      mixStage.replaceChildren();
+      mixOverlay.classList.remove('is-active');
+      document.body.classList.remove('is-dimmed');
+
+      sources.forEach((sticker) => sticker.remove());
+
+      mixedChocolateSticker = createDynamicSticker('mixed', ASSETS.mixedChocolate, 'Mixed chocolate', centerX, centerY);
+      sceneContent.appendChild(mixedChocolateSticker);
+      bindDraggable(mixedChocolateSticker);
+
+      isAnimating = false;
+      advancePhase(PHASE.POUR);
+      saveStickerPositions();
+      unlockScene();
+    }
+
+    function createDynamicSticker(id, src, alt, x, y) {
+      const sticker = document.createElement('img');
+      sticker.className = `sticker sticker--draggable sticker--${id}`;
+      sticker.dataset.stickerId = id;
+      sticker.src = src;
+      sticker.alt = alt;
+      sticker.style.left = `${x - 80}px`;
+      sticker.style.top = `${y - 80}px`;
+      return sticker;
+    }
+
+    function combineMoldAndChocolate() {
+      if (gamePhase !== PHASE.POUR || !mixedChocolateSticker) {
+        return;
+      }
+
+      const rect = moldSticker.getBoundingClientRect();
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height / 2;
+
+      moldSticker.remove();
+      mixedChocolateSticker.remove();
+      mixedChocolateSticker = null;
+
+      filledMoldSticker = createDynamicSticker('filled-mold', ASSETS.filledMold, 'Filled chocolate mold', x, y);
+      sceneContent.appendChild(filledMoldSticker);
+      bindDraggable(filledMoldSticker);
+
+      advancePhase(PHASE.FREEZE);
+      saveStickerPositions();
+    }
+
+    function freezeChocolate() {
+      if (gamePhase !== PHASE.FREEZE || !filledMoldSticker) {
+        return;
+      }
+
+      filledMoldSticker.classList.add('sticker--in-fridge');
+      centerStickerOnTarget(filledMoldSticker, fridgeSticker);
+
+      isAnimating = true;
+      lockScene();
+
+      timeOverlay.classList.add('is-active');
+      thirtyMinutesAudio.currentTime = 0;
+      thirtyMinutesAudio.play().catch(() => {});
+
+      const onTimeAudioEnded = () => {
+        thirtyMinutesAudio.removeEventListener('ended', onTimeAudioEnded);
+        timeOverlay.classList.remove('is-active');
+        startVictorySequence();
+      };
+
+      thirtyMinutesAudio.addEventListener('ended', onTimeAudioEnded);
+      saveStickerPositions();
+    }
+
+    function positionMapReturnBelowDars() {
+      if (!darsSticker) {
+        return;
+      }
+
+      const darsRect = darsSticker.getBoundingClientRect();
+      const gapBelowDars = 16;
+      mapReturn.style.top = `${darsRect.bottom + gapBelowDars}px`;
+      mapReturn.style.left = `${darsRect.left + darsRect.width / 2}px`;
+      mapReturn.style.transform = 'translateX(-50%)';
+    }
+
+    async function startVictorySequence() {
+      advancePhase(PHASE.VICTORY);
+
+      if (filledMoldSticker) {
+        filledMoldSticker.remove();
+        filledMoldSticker = null;
+      }
+
+      victoryAudio.currentTime = 0;
+      victoryAudio.play().catch(() => {});
+
+      const fridgeRect = fridgeSticker.getBoundingClientRect();
+      darsSticker = createDynamicSticker('dars', ASSETS.dars, 'Dars chocolate bar', fridgeRect.left, fridgeRect.top);
+      darsSticker.style.setProperty('--sticker-size', '120px');
+      darsSticker.style.zIndex = '25';
+      sceneContent.appendChild(darsSticker);
+
+      await wait(200);
+
+      const targetSize = Math.min(window.innerWidth, window.innerHeight) * 0.42;
+      darsSticker.style.transition = 'left 2.2s ease, top 2.2s ease, width 2.2s ease';
+      darsSticker.style.left = `${window.innerWidth / 2 - targetSize / 2}px`;
+      darsSticker.style.top = `${window.innerHeight / 2 - targetSize / 2}px`;
+      darsSticker.style.setProperty('--sticker-size', `${targetSize}px`);
+
+      await wait(2300);
+
+      positionMapReturnBelowDars();
+      mapReturn.classList.add('is-visible');
+      isAnimating = false;
+      saveStickerPositions();
+    }
+
+    function handleDrop(sticker) {
+      if (gamePhase === PHASE.MELT_BUTTER && sticker === butterSticker && !isMeltedButter()) {
+        if (isCenterOverTarget(sticker, microwaveSticker)) {
+          meltButter(true);
+        }
+        return;
+      }
+
+      if (gamePhase === PHASE.MIX) {
+        if ([butterSticker, eggsSticker, milkSticker, cocoaSticker, whiskSticker].includes(sticker)) {
+          if (sticker === butterSticker && !isMeltedButter()) {
+            return;
+          }
+          markInBowl(sticker);
+          checkMixReady();
+        }
+        return;
+      }
+
+      if (gamePhase === PHASE.POUR && sticker === mixedChocolateSticker) {
+        if (isCenterOverTarget(sticker, moldSticker)) {
+          combineMoldAndChocolate();
+        }
+        return;
+      }
+
+      if (gamePhase === PHASE.FREEZE && sticker === filledMoldSticker) {
+        if (isCenterOverTarget(sticker, fridgeSticker)) {
+          freezeChocolate();
+        }
+      }
+    }
+
+    function bindDraggable(sticker) {
+      sticker.addEventListener('pointerdown', (event) => {
+        if (sceneContent.classList.contains('is-locked') || isAnimating) {
+          return;
+        }
+        event.preventDefault();
+        sticker.setPointerCapture(event.pointerId);
+        startDrag(sticker, event.clientX, event.clientY);
+      });
+    }
+
+    function startDrag(sticker, clientX, clientY) {
+      normalizeStickerPosition(sticker);
+      const rect = sticker.getBoundingClientRect();
+      const offsetX = clientX - rect.left;
+      const offsetY = clientY - rect.top;
+      sticker.classList.add('is-dragging');
+
+      function moveAt(x, y) {
+        sticker.style.left = `${x - offsetX}px`;
+        sticker.style.top = `${y - offsetY}px`;
+        applyStickerTransform(sticker);
+      }
+
+      function onPointerMove(event) {
+        moveAt(event.clientX, event.clientY);
+      }
+
+      function onPointerUp() {
+        sticker.classList.remove('is-dragging');
+        handleDrop(sticker);
+        saveStickerPositions();
+        window.removeEventListener('pointermove', onPointerMove);
+        window.removeEventListener('pointerup', onPointerUp);
+      }
+
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', onPointerUp);
+    }
+
+    function hideIntro() {
+      introOverlay.classList.add('intro-overlay--hidden');
+      unlockScene();
+    }
+
+    function completeIntro() {
+      localStorage.setItem(STORAGE.intro, 'true');
+      hideIntro();
+      renderInstructions();
+    }
+
+    function showContinuePrompt() {
+      introWaitingForClick = true;
+      introCursor.classList.add('intro-cursor--hidden');
+      introContinue.classList.add('intro-continue--visible');
+    }
+
+    function resetIntroPanel() {
+      introTypewriter.textContent = '';
+      introContinue.classList.remove('intro-continue--visible');
+      introCursor.classList.remove('intro-cursor--hidden');
+      introWaitingForClick = false;
+    }
+
+    function typeIntroMessage(message, onComplete) {
+      introIsTyping = true;
+      let charIndex = 0;
+      const text = GameAudio.replacePlayerText(message);
+
+      function typeNextCharacter() {
+        if (charIndex < text.length) {
+          const char = text.charAt(charIndex);
+          introTypewriter.textContent += char;
+          GameAudio.playTypeChar(char);
+          charIndex += 1;
+          window.setTimeout(typeNextCharacter, TYPE_SPEED_MS);
+          return;
+        }
+        introIsTyping = false;
+        onComplete();
+      }
+
+      typeNextCharacter();
+    }
+
+    function startIntroMessage() {
+      resetIntroPanel();
+      typeIntroMessage(INTRO_MESSAGES[introMessageIndex], showContinuePrompt);
+    }
+
+    function advanceIntro() {
+      if (introIsTyping || !introWaitingForClick) {
+        return;
+      }
+      introMessageIndex += 1;
+      if (introMessageIndex >= INTRO_MESSAGES.length) {
+        completeIntro();
+        return;
+      }
+      startIntroMessage();
+    }
+
+    function initIntro() {
+      if (localStorage.getItem(STORAGE.intro) === 'true') {
+        hideIntro();
+        renderInstructions();
+        return;
+      }
+      startIntroMessage();
+      introOverlay.addEventListener('click', advanceIntro);
+      introBox.addEventListener('click', (event) => {
+        event.stopPropagation();
+        advanceIntro();
+      });
+    }
+
+    function restoreGameState() {
+      if (gamePhase >= PHASE.MIX && !isMeltedButter()) {
+        meltButter(false, true);
+      }
+
+      if (gamePhase >= PHASE.POUR) {
+        [eggsSticker, milkSticker, butterSticker, bowlSticker, whiskSticker, cocoaSticker].forEach((el) => el.remove());
+      }
+
+      if (gamePhase === PHASE.POUR && !mixedChocolateSticker) {
+        mixedChocolateSticker = createDynamicSticker(
+          'mixed',
+          ASSETS.mixedChocolate,
+          'Mixed chocolate',
+          window.innerWidth / 2,
+          window.innerHeight / 2
+        );
+        sceneContent.appendChild(mixedChocolateSticker);
+        bindDraggable(mixedChocolateSticker);
+      }
+
+      if (gamePhase >= PHASE.FREEZE) {
+        moldSticker.remove();
+        if (mixedChocolateSticker) {
+          mixedChocolateSticker.remove();
+          mixedChocolateSticker = null;
+        }
+
+        if (gamePhase === PHASE.FREEZE && !filledMoldSticker) {
+          filledMoldSticker = createDynamicSticker(
+            'filled-mold',
+            ASSETS.filledMold,
+            'Filled chocolate mold',
+            window.innerWidth * 0.5,
+            window.innerHeight * 0.6
+          );
+          sceneContent.appendChild(filledMoldSticker);
+          bindDraggable(filledMoldSticker);
+        }
+      }
+
+      if (gamePhase >= PHASE.VICTORY) {
+        if (filledMoldSticker) {
+          filledMoldSticker.remove();
+          filledMoldSticker = null;
+        }
+        if (!darsSticker) {
+          const targetSize = Math.min(window.innerWidth, window.innerHeight) * 0.42;
+          darsSticker = createDynamicSticker('dars', ASSETS.dars, 'Dars chocolate bar', window.innerWidth / 2, window.innerHeight / 2);
+          darsSticker.style.setProperty('--sticker-size', `${targetSize}px`);
+          darsSticker.style.left = `${window.innerWidth / 2 - targetSize / 2}px`;
+          darsSticker.style.top = `${window.innerHeight / 2 - targetSize / 2}px`;
+          sceneContent.appendChild(darsSticker);
+        }
+        positionMapReturnBelowDars();
+        mapReturn.classList.add('is-visible');
+      }
+    }
+
+    mapReturn.addEventListener('click', () => {
+      localStorage.setItem('dars-challenge-complete', 'true');
+      sessionStorage.setItem('dars-map-animate', 'true');
+      window.location.href = 'Map.html';
+    });
+
+    document.querySelectorAll('.sticker--draggable').forEach(bindDraggable);
+
+    window.addEventListener('load', () => {
+      loadGamePhase();
+      loadStickerPositions();
+      restoreGameState();
+      initIntro();
+      renderInstructions();
+    });
+
+    window.addEventListener('resize', () => {
+      if (gamePhase >= PHASE.VICTORY && darsSticker) {
+        positionMapReturnBelowDars();
+      }
+    });
+  </script>
+</body>
+</html>

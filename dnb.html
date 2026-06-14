@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Finality of Arcanum</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      color: #ffffff;
+      background: #000000;
+    }
+
+    body.has-cauldron {
+      background-color: #140820;
+      background-image: url('stickers/arcane_cauldron.png');
+      background-repeat: no-repeat;
+      background-position: center center;
+      background-size: cover;
+    }
+
+    .scene-content {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+    }
+
+    .scene-content.is-locked .ingredient-sticker.is-draggable {
+      pointer-events: none;
+      cursor: default;
+    }
+
+    .intro-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      cursor: pointer;
+    }
+
+    .intro-overlay--hidden {
+      display: none;
+    }
+
+    .intro-overlay--black {
+      background: #000000;
+    }
+
+    .intro-overlay--arcane {
+      background: rgba(20, 0, 40, 0.72);
+    }
+
+    .intro-box {
+      width: min(720px, 92vw);
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 28px 32px;
+      cursor: pointer;
+    }
+
+    .intro-box--black {
+      border: 3px solid #222222;
+      border-radius: 12px;
+      background: #000000;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8);
+    }
+
+    .intro-box--arcane {
+      border: 3px solid rgba(249, 233, 154, 0.85);
+      border-radius: 12px;
+      background: rgba(59, 7, 100, 0.94);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+    }
+
+    .intro-text {
+      font-size: 1.15rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    .intro-box--black .intro-text {
+      color: #ffffff;
+    }
+
+    .intro-box--arcane .intro-text {
+      color: #ffffff;
+    }
+
+    .intro-cursor {
+      display: inline-block;
+      width: 2px;
+      margin-left: 2px;
+      background-color: #ffffff;
+      animation: blink 0.8s step-end infinite;
+      vertical-align: text-bottom;
+      height: 1.1em;
+    }
+
+    .intro-cursor--hidden {
+      visibility: hidden;
+    }
+
+    .intro-continue {
+      margin-top: 18px;
+      font-size: 1rem;
+      font-style: italic;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .intro-box--black .intro-continue {
+      color: #cccccc;
+    }
+
+    .intro-box--arcane .intro-continue {
+      color: #f9e99a;
+    }
+
+    .intro-continue--visible {
+      opacity: 1;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    .ingredient-sticker {
+      position: absolute;
+      width: min(150px, 18vw);
+      height: auto;
+      user-select: none;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateX(-36px);
+      transition: opacity 0.55s ease, transform 0.55s ease;
+      z-index: 4;
+    }
+
+    .ingredient-sticker--dars {
+      top: 30%;
+      left: 5%;
+    }
+
+    .ingredient-sticker--nose {
+      top: 40%;
+      left: 5%;
+    }
+
+    .ingredient-sticker--baby {
+      top: 62%;
+      left: 5%;
+    }
+
+    .ingredient-sticker.is-visible {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .ingredient-sticker.is-draggable {
+      pointer-events: auto;
+      cursor: grab;
+      touch-action: none;
+      z-index: 6;
+    }
+
+    .ingredient-sticker.is-draggable.is-dragging {
+      cursor: grabbing;
+      z-index: 12;
+    }
+
+    .ingredient-sticker.is-placed {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .cauldron-hotspot {
+      position: absolute;
+      top: 76%;
+      left: 47.5%;
+      width: min(220px, 28vw);
+      height: min(150px, 20vh);
+      transform: translate(-50%, -50%);
+      background: transparent;
+      border: none;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .spin-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.35);
+      pointer-events: none;
+    }
+
+    .spin-overlay.is-active {
+      display: flex;
+    }
+
+    .spin-stage {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .spin-item {
+      position: fixed;
+      width: 88px;
+      height: auto;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .reveal-dnb {
+      width: min(280px, 42vw);
+      height: auto;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      padding: 0;
+      pointer-events: auto;
+    }
+
+    .reveal-dnb img {
+      width: 100%;
+      height: auto;
+      display: block;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    .video-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(0, 0, 0, 0.88);
+    }
+
+    .video-overlay.is-open {
+      display: flex;
+    }
+
+    .video-panel {
+      position: relative;
+      width: min(960px, 96vw);
+      max-height: 90vh;
+      border: 3px solid rgba(249, 233, 154, 0.85);
+      border-radius: 12px;
+      background: #000000;
+      overflow: hidden;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+    }
+
+    .video-panel video {
+      display: block;
+      width: 100%;
+      max-height: 82vh;
+      background: #000000;
+    }
+
+    .video-close {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 36px;
+      height: 36px;
+      border: 2px solid #f9e99a;
+      border-radius: 50%;
+      background: rgba(59, 7, 100, 0.92);
+      color: #f9e99a;
+      font-size: 1.25rem;
+      line-height: 1;
+      cursor: pointer;
+      z-index: 2;
+    }
+
+    .hotspot-dialogue {
+      position: fixed;
+      z-index: 50;
+      width: min(440px, 90vw);
+      padding: 16px 20px;
+      border: 3px solid rgba(249, 233, 154, 0.85);
+      border-radius: 12px;
+      background: rgba(59, 7, 100, 0.94);
+      box-shadow: 0 10px 32px rgba(0, 0, 0, 0.4);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease, visibility 0.25s ease;
+      pointer-events: none;
+    }
+
+    .hotspot-dialogue.is-visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .hotspot-dialogue.is-clickable {
+      pointer-events: auto;
+      cursor: pointer;
+    }
+
+    .hotspot-dialogue__text {
+      color: #ffffff;
+      font-size: 1.05rem;
+      line-height: 1.55;
+    }
+
+    .hotspot-dialogue__continue {
+      margin-top: 12px;
+      color: #f9e99a;
+      font-size: 0.95rem;
+      font-style: italic;
+      display: none;
+    }
+
+    .hotspot-dialogue__continue.is-visible {
+      display: block;
+    }
+
+    .finale-panel {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.92);
+      z-index: 95;
+      display: none;
+      align-items: flex-start;
+      gap: clamp(20px, 4vw, 44px);
+      max-width: min(960px, 96vw);
+      opacity: 0;
+      transition: opacity 0.5s ease, transform 0.55s cubic-bezier(0.2, 1.1, 0.3, 1);
+    }
+
+    .finale-panel.is-visible {
+      display: flex;
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .finale-panel__media {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .finale-panel .reveal-dnb {
+      position: static;
+      top: auto;
+      left: auto;
+      transform: none;
+      opacity: 1;
+      width: min(280px, 38vw);
+    }
+
+    .finale-hint {
+      margin-top: 12px;
+      width: 100%;
+      padding: 12px 16px;
+      border: 3px solid rgba(249, 233, 154, 0.85);
+      border-radius: 12px;
+      background: rgba(59, 7, 100, 0.94);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      color: #f9e99a;
+      font-size: 0.92rem;
+      font-style: italic;
+      text-align: center;
+    }
+
+    .finale-panel__dialogue {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 14px;
+      max-width: min(380px, 42vw);
+      padding: 20px 22px;
+      border: 3px solid rgba(249, 233, 154, 0.85);
+      border-radius: 12px;
+      background: rgba(59, 7, 100, 0.94);
+      box-shadow: 0 10px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .finale-panel__line {
+      color: #ffffff;
+      font-size: 1.08rem;
+      line-height: 1.5;
+    }
+
+    .menu-return {
+      margin-top: 10px;
+      align-self: flex-start;
+      padding: 12px 20px;
+      border: 2px solid #f9e99a;
+      border-radius: 999px;
+      background: rgba(59, 7, 100, 0.92);
+      color: #f9e99a;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+
+    .menu-return:hover {
+      filter: brightness(1.08);
+    }
+
+    @media (max-width: 720px) {
+      .finale-panel {
+        flex-direction: column;
+        align-items: center;
+        max-height: 92vh;
+        overflow-y: auto;
+      }
+
+      .finale-panel__dialogue {
+        max-width: 92vw;
+        align-items: center;
+        text-align: center;
+      }
+
+      .menu-return {
+        align-self: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="intro-overlay intro-overlay--black" id="intro-overlay">
+    <div class="intro-box intro-box--black" id="intro-box">
+      <p class="intro-text">
+        <span id="intro-typewriter"></span><span id="intro-cursor" class="intro-cursor"></span>
+      </p>
+      <p class="intro-continue" id="intro-continue">&lt;click to continue&gt;</p>
+    </div>
+  </div>
+
+  <main class="scene-content is-locked" id="scene-content">
+    <img
+      class="ingredient-sticker ingredient-sticker--dars"
+      id="ingredient-dars"
+      src="stickers/images/DARS/dars_sticker.png"
+      alt="Arcane chocolate"
+      data-ingredient-id="dars"
+    >
+    <img
+      class="ingredient-sticker ingredient-sticker--nose"
+      id="ingredient-nose"
+      src="stickers/images/Nose/nose_sticker.png"
+      alt="Arcane nose"
+      data-ingredient-id="nose"
+    >
+    <img
+      class="ingredient-sticker ingredient-sticker--baby"
+      id="ingredient-baby"
+      src="stickers/images/Baby/baby_sticker.png"
+      alt="Arcane baby"
+      data-ingredient-id="baby"
+    >
+    <div class="cauldron-hotspot" id="cauldron-hotspot" aria-hidden="true"></div>
+  </main>
+
+  <div class="hotspot-dialogue" id="hotspot-dialogue">
+    <p class="hotspot-dialogue__text" id="hotspot-dialogue-text"></p>
+    <p class="hotspot-dialogue__continue" id="hotspot-dialogue-continue">&lt;click to continue&gt;</p>
+  </div>
+
+  <div class="spin-overlay" id="spin-overlay">
+    <div class="spin-stage" id="spin-stage"></div>
+  </div>
+
+  <div class="finale-panel" id="finale-panel">
+    <div class="finale-panel__media">
+      <button class="reveal-dnb" id="reveal-dnb" type="button" aria-label="Play birthday video">
+        <img src="stickers/smol_DNB.jpeg" alt="DNB">
+      </button>
+      <p class="finale-hint">Click the picture for a surprise :)</p>
+    </div>
+    <div class="finale-panel__dialogue">
+      <p class="finale-panel__line">Behold.</p>
+      <p class="finale-panel__line">Origin of Dars Nose Baby successfully recovered.</p>
+      <p class="finale-panel__line">Happy Birthday DNB, you little gremlin.</p>
+      <button class="menu-return" id="menu-return" type="button">&lt;Return to Menu&gt;</button>
+    </div>
+  </div>
+
+  <div class="video-overlay" id="video-overlay">
+    <div class="video-panel">
+      <button class="video-close" id="video-close" type="button" aria-label="Close video">×</button>
+      <video id="birthday-video" controls playsinline preload="metadata">
+        <source src="video/bday_video.mp4" type="video/mp4">
+      </video>
+    </div>
+  </div>
+
+  <script src="audio/game-audio.js"></script>
+  <script>
+    GameAudio.initBgm('mystic_bgm.mp3');
+  </script>
+  <script>
+    const ASSETS = {
+      dars: 'stickers/images/DARS/dars_sticker.png',
+      nose: 'stickers/images/Nose/nose_sticker.png',
+      baby: 'stickers/images/Baby/baby_sticker.png'
+    };
+
+    const TYPE_SPEED_MS = 30;
+    const INTRO_STEPS = [
+      {
+        style: 'black',
+        message: 'Welcome to the Finality of Arcanum.',
+        onShow: null
+      },
+      {
+        style: 'arcane',
+        message: 'Birthday Girl, you have completed all 3 challenges and gathered the Almighty Arcane Ingredients.',
+        onShow: revealIngredients
+      },
+      {
+        style: 'arcane',
+        message: 'These items, when combined in the Arcane Cauldron, will reveal the true origin of your soul.',
+        onShow: null
+      }
+    ];
+
+    const INGREDIENT_MESSAGES = {
+      dars: 'The chocolate has awakened.',
+      nose: 'The nose has returned.',
+      baby: 'The baby has been delivered safely.'
+    };
+
+    const sceneContent = document.getElementById('scene-content');
+    const introOverlay = document.getElementById('intro-overlay');
+    const introBox = document.getElementById('intro-box');
+    const introTypewriter = document.getElementById('intro-typewriter');
+    const introCursor = document.getElementById('intro-cursor');
+    const introContinue = document.getElementById('intro-continue');
+    const cauldronHotspot = document.getElementById('cauldron-hotspot');
+    const spinOverlay = document.getElementById('spin-overlay');
+    const spinStage = document.getElementById('spin-stage');
+    const revealDnb = document.getElementById('reveal-dnb');
+    const videoOverlay = document.getElementById('video-overlay');
+    const birthdayVideo = document.getElementById('birthday-video');
+    const videoClose = document.getElementById('video-close');
+    const hotspotDialogue = document.getElementById('hotspot-dialogue');
+    const hotspotDialogueText = document.getElementById('hotspot-dialogue-text');
+    const hotspotDialogueContinue = document.getElementById('hotspot-dialogue-continue');
+    const finalePanel = document.getElementById('finale-panel');
+    const menuReturn = document.getElementById('menu-return');
+
+    const ingredientStickers = [
+      document.getElementById('ingredient-dars'),
+      document.getElementById('ingredient-nose'),
+      document.getElementById('ingredient-baby')
+    ];
+
+    let introStepIndex = 0;
+    let introIsTyping = false;
+    let introWaitingForClick = false;
+    let isAnimating = false;
+    let hotspotDialogueDismiss = null;
+    const placedIngredients = new Set();
+
+    function positionHotspotDialogue() {
+      const rect = cauldronHotspot.getBoundingClientRect();
+      hotspotDialogue.style.left = `${rect.left + rect.width / 2}px`;
+      hotspotDialogue.style.top = `${rect.top - 12}px`;
+      hotspotDialogue.style.transform = 'translate(-50%, -100%)';
+    }
+
+    function hideHotspotDialogue() {
+      hotspotDialogue.classList.remove('is-visible', 'is-clickable');
+      hotspotDialogueContinue.classList.remove('is-visible');
+      hotspotDialogueDismiss = null;
+    }
+
+    function showHotspotDialogue(message, options = {}) {
+      const { clickToContinue = false, onDismiss = null } = options;
+      positionHotspotDialogue();
+      hotspotDialogueText.textContent = message;
+      hotspotDialogueContinue.classList.toggle('is-visible', clickToContinue);
+      hotspotDialogue.classList.toggle('is-clickable', clickToContinue);
+      hotspotDialogue.classList.add('is-visible');
+      hotspotDialogueDismiss = onDismiss;
+    }
+
+    function handleHotspotDialogueClick() {
+      if (!hotspotDialogue.classList.contains('is-clickable') || !hotspotDialogueContinue.classList.contains('is-visible')) {
+        return;
+      }
+
+      const onDismiss = hotspotDialogueDismiss;
+      hideHotspotDialogue();
+      if (onDismiss) {
+        onDismiss();
+      }
+    }
+
+    function setIntroStyle(style) {
+      const isBlack = style === 'black';
+      introOverlay.classList.toggle('intro-overlay--black', isBlack);
+      introOverlay.classList.toggle('intro-overlay--arcane', !isBlack);
+      introBox.classList.toggle('intro-box--black', isBlack);
+      introBox.classList.toggle('intro-box--arcane', !isBlack);
+
+      if (!isBlack) {
+        document.body.classList.add('has-cauldron');
+      }
+    }
+
+    function revealIngredients() {
+      ingredientStickers.forEach((sticker, index) => {
+        window.setTimeout(() => {
+          sticker.classList.add('is-visible');
+        }, index * 450);
+      });
+    }
+
+    function showContinuePrompt() {
+      introWaitingForClick = true;
+      introCursor.classList.add('intro-cursor--hidden');
+      introContinue.classList.add('intro-continue--visible');
+    }
+
+    function resetIntroPanel() {
+      introTypewriter.textContent = '';
+      introContinue.classList.remove('intro-continue--visible');
+      introCursor.classList.remove('intro-cursor--hidden');
+      introWaitingForClick = false;
+    }
+
+    function typeIntroMessage(message, onComplete) {
+      introIsTyping = true;
+      let charIndex = 0;
+      const text = GameAudio.replacePlayerText(message);
+
+      function typeNextCharacter() {
+        if (charIndex < text.length) {
+          const char = text.charAt(charIndex);
+          introTypewriter.textContent += char;
+          GameAudio.playTypeChar(char);
+          charIndex += 1;
+          window.setTimeout(typeNextCharacter, TYPE_SPEED_MS);
+          return;
+        }
+        introIsTyping = false;
+        onComplete();
+      }
+
+      typeNextCharacter();
+    }
+
+    function startIntroStep() {
+      const step = INTRO_STEPS[introStepIndex];
+      setIntroStyle(step.style);
+      resetIntroPanel();
+      if (step.onShow) {
+        step.onShow();
+      }
+      typeIntroMessage(step.message, showContinuePrompt);
+    }
+
+    function unlockDragPhase() {
+      introOverlay.classList.add('intro-overlay--hidden');
+      sceneContent.classList.remove('is-locked');
+      ingredientStickers.forEach((sticker) => {
+        if (!placedIngredients.has(sticker.dataset.ingredientId)) {
+          sticker.classList.add('is-draggable');
+        }
+      });
+    }
+
+    function showProceedDialogue() {
+      introOverlay.classList.add('intro-overlay--hidden');
+      document.body.classList.add('has-cauldron');
+      showHotspotDialogue('Proceed to add the ingredients into the cauldron.', {
+        clickToContinue: true,
+        onDismiss: unlockDragPhase
+      });
+    }
+
+    function advanceIntro() {
+      if (introIsTyping || !introWaitingForClick) {
+        return;
+      }
+
+      introStepIndex += 1;
+      if (introStepIndex >= INTRO_STEPS.length) {
+        showProceedDialogue();
+        return;
+      }
+
+      startIntroStep();
+    }
+
+    function isCenterOverTarget(sticker, target) {
+      const stickerRect = sticker.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const centerX = stickerRect.left + stickerRect.width / 2;
+      const centerY = stickerRect.top + stickerRect.height / 2;
+      return (
+        centerX >= targetRect.left
+        && centerX <= targetRect.right
+        && centerY >= targetRect.top
+        && centerY <= targetRect.bottom
+      );
+    }
+
+    function normalizeStickerPosition(sticker) {
+      const rect = sticker.getBoundingClientRect();
+      sticker.style.left = `${rect.left}px`;
+      sticker.style.top = `${rect.top}px`;
+      sticker.style.width = `${rect.width}px`;
+    }
+
+    function handleIngredientDrop(sticker) {
+      if (!isCenterOverTarget(sticker, cauldronHotspot)) {
+        return;
+      }
+
+      const ingredientId = sticker.dataset.ingredientId;
+      if (placedIngredients.has(ingredientId)) {
+        return;
+      }
+
+      placedIngredients.add(ingredientId);
+      sticker.classList.remove('is-draggable', 'is-dragging');
+      sticker.classList.add('is-placed');
+
+      showHotspotDialogue(INGREDIENT_MESSAGES[ingredientId]);
+
+      if (ingredientId === 'baby') {
+        window.setTimeout(() => {
+          showHotspotDialogue('The prophecy is complete.');
+          runCauldronAnimation();
+        }, 1100);
+      }
+    }
+
+    function bindDraggable(sticker) {
+      sticker.addEventListener('pointerdown', (event) => {
+        if (sceneContent.classList.contains('is-locked') || isAnimating || sticker.classList.contains('is-placed')) {
+          return;
+        }
+
+        event.preventDefault();
+        sticker.setPointerCapture(event.pointerId);
+        normalizeStickerPosition(sticker);
+        const rect = sticker.getBoundingClientRect();
+        const offsetX = event.clientX - rect.left;
+        const offsetY = event.clientY - rect.top;
+        sticker.classList.add('is-dragging');
+
+        function moveAt(x, y) {
+          sticker.style.left = `${x - offsetX}px`;
+          sticker.style.top = `${y - offsetY}px`;
+        }
+
+        function onPointerMove(moveEvent) {
+          moveAt(moveEvent.clientX, moveEvent.clientY);
+        }
+
+        function onPointerUp() {
+          sticker.classList.remove('is-dragging');
+          handleIngredientDrop(sticker);
+          window.removeEventListener('pointermove', onPointerMove);
+          window.removeEventListener('pointerup', onPointerUp);
+        }
+
+        window.addEventListener('pointermove', onPointerMove);
+        window.addEventListener('pointerup', onPointerUp);
+      });
+    }
+
+    function runCauldronAnimation() {
+      if (isAnimating) {
+        return;
+      }
+
+      isAnimating = true;
+      sceneContent.classList.add('is-locked');
+      spinOverlay.classList.add('is-active');
+
+      const centerX = window.innerWidth * 0.45;
+      const centerY = window.innerHeight * 0.76;
+      const ingredientOrder = ['dars', 'nose', 'baby'];
+      const spinItems = ingredientOrder.map((id, index) => {
+        const img = document.createElement('img');
+        img.src = ASSETS[id];
+        img.alt = id;
+        img.className = 'spin-item';
+        spinStage.appendChild(img);
+        return { img, offsetAngle: (Math.PI * 2 * index) / 3 };
+      });
+
+      let angle = 0;
+      let lastFrameTime = performance.now();
+      const startTime = lastFrameTime;
+
+      function frame(now) {
+        const deltaSeconds = Math.min((now - lastFrameTime) / 1000, 0.033);
+        lastFrameTime = now;
+        const elapsed = (now - startTime) / 1000;
+        const speed = 0.8 + elapsed * 1.55;
+        const radius = Math.max(0, 130 - elapsed * 44);
+        const itemScale = Math.max(0.02, 1 - elapsed * 0.36);
+
+        if (elapsed < 3.6) {
+          angle += speed * deltaSeconds;
+
+          spinItems.forEach(({ img, offsetAngle }) => {
+            const itemAngle = angle + offsetAngle;
+            const x = centerX + Math.cos(itemAngle) * radius;
+            const y = centerY + Math.sin(itemAngle) * radius;
+            img.style.left = `${x}px`;
+            img.style.top = `${y}px`;
+            img.style.width = `${88 * itemScale}px`;
+          });
+
+          requestAnimationFrame(frame);
+          return;
+        }
+
+        spinItems.forEach(({ img }) => img.remove());
+        spinOverlay.classList.remove('is-active');
+        hideHotspotDialogue();
+        finalePanel.classList.add('is-visible');
+        isAnimating = false;
+      }
+
+      requestAnimationFrame(frame);
+    }
+
+    function openVideo() {
+      videoOverlay.classList.add('is-open');
+      birthdayVideo.currentTime = 0;
+      birthdayVideo.play().catch(() => {});
+    }
+
+    function closeVideo() {
+      videoOverlay.classList.remove('is-open');
+      birthdayVideo.pause();
+    }
+
+    introOverlay.addEventListener('click', advanceIntro);
+    introBox.addEventListener('click', (event) => {
+      event.stopPropagation();
+      advanceIntro();
+    });
+
+    hotspotDialogue.addEventListener('click', handleHotspotDialogueClick);
+    window.addEventListener('resize', positionHotspotDialogue);
+
+    ingredientStickers.forEach(bindDraggable);
+    revealDnb.addEventListener('click', openVideo);
+    videoClose.addEventListener('click', closeVideo);
+    videoOverlay.addEventListener('click', (event) => {
+      if (event.target === videoOverlay) {
+        closeVideo();
+      }
+    });
+    menuReturn.addEventListener('click', () => {
+      window.location.href = 'Begin.html';
+    });
+
+    startIntroStep();
+  </script>
+</body>
+</html>

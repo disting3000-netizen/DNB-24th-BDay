@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Begin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Fredoka:wght@500&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      color: #ffffff;
+    }
+
+    .scene-background {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      background: #3b0764;
+    }
+
+    .scene-background__gradient {
+      position: absolute;
+      inset: -20%;
+      background: linear-gradient(
+        135deg,
+        #2e1065 0%,
+        #6b21a8 25%,
+        #7e22ce 50%,
+        #581c87 75%,
+        #4c1d95 100%
+      );
+      background-size: 300% 300%;
+      animation: gradient-drift 14s ease-in-out infinite;
+    }
+
+    .scene-background__gradient::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 18% 22%, rgba(236, 72, 153, 0.28), transparent 42%),
+        radial-gradient(circle at 82% 78%, rgba(167, 139, 250, 0.22), transparent 48%),
+        radial-gradient(circle at 62% 18%, rgba(192, 132, 252, 0.18), transparent 38%);
+      animation: glow-drift 18s ease-in-out infinite alternate;
+    }
+
+    .scene-background__particles {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .scene-background__vignette {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at center, transparent 35%, rgba(20, 0, 40, 0.55) 100%),
+        radial-gradient(ellipse at 18% 18%, rgba(255, 255, 255, 0.08), transparent 32%);
+      pointer-events: none;
+    }
+
+    @keyframes gradient-drift {
+      0%, 100% {
+        background-position: 0% 50%;
+        transform: scale(1);
+      }
+
+      50% {
+        background-position: 100% 50%;
+        transform: scale(1.05);
+      }
+    }
+
+    @keyframes glow-drift {
+      0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 0.85;
+      }
+
+      100% {
+        transform: translate(3%, -2%) scale(1.08);
+        opacity: 1;
+      }
+    }
+
+    .scene-content {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+    }
+
+    .title-block {
+      position: absolute;
+      top: 100px;
+      left: 50px;
+      text-align: left;
+    }
+
+    .title-line {
+      display: block;
+      font-family: "Fredoka", sans-serif;
+      font-size: 1.5rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+    }
+
+    .title-line--main {
+      font-family: "Dancing Script", cursive;
+      font-size: clamp(2.75rem, 7vw, 4.5rem);
+      font-weight: 700;
+      line-height: 1.1;
+      margin-top: 8px;
+      animation: beating-heart 1.1s ease-in-out infinite;
+      transform-origin: center left;
+    }
+
+    @keyframes beating-heart {
+      0%, 100% {
+        transform: scale(1);
+      }
+
+      14% {
+        transform: scale(1.08);
+      }
+
+      28% {
+        transform: scale(1);
+      }
+
+      42% {
+        transform: scale(1.12);
+      }
+
+      70% {
+        transform: scale(1);
+      }
+    }
+
+    .menu {
+      position: absolute;
+      top: 300px;
+      left: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .menu__divider {
+      border: none;
+      border-top: 2px solid rgba(255, 255, 255, 0.55);
+      width: 220px;
+    }
+
+    .menu__option {
+      background: none;
+      border: none;
+      color: #ffffff;
+      font: inherit;
+      font-size: 1.5rem;
+      font-style: italic;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      text-align: left;
+      cursor: pointer;
+      padding: 4px 0;
+      transition: transform 0.15s ease, opacity 0.15s ease, letter-spacing 0.15s ease;
+    }
+
+    .menu__option::before {
+      content: "▸ ";
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+
+    .menu__option:hover,
+    .menu__option:focus-visible {
+      outline: none;
+      transform: translateX(8px);
+      letter-spacing: 0.18em;
+    }
+
+    .menu__option:hover::before,
+    .menu__option:focus-visible::before {
+      opacity: 1;
+    }
+
+    .sticker {
+      position: absolute;
+      max-width: var(--sticker-size);
+      width: var(--sticker-size);
+      height: auto;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    .sticker--dnb {
+      --sticker-size: 300px;
+      top: 120px;
+      right: 450px;
+      transform-origin: bottom center;
+      animation: dnb-lean-shake 1s ease-in-out infinite;
+    }
+
+    .sticker--narams {
+      --sticker-size: 300px;
+      top: 500px;
+      left: 220px;
+      transform-origin: center center;
+      animation: narams-spin 1s linear infinite;
+    }
+
+    .sticker--saurav {
+      --sticker-size: 400px;
+      bottom: 80px;
+      right: 60px;
+      transform-origin: center center;
+      animation: saurav-collapse-expand 3s ease-in-out infinite;
+    }
+
+    @keyframes dnb-lean-shake {
+      0%, 100% {
+        transform: rotate(0deg) translateX(0);
+      }
+
+      30% {
+        transform: rotate(-12deg) translateX(-6px);
+      }
+
+      70% {
+        transform: rotate(12deg) translateX(6px);
+      }
+    }
+
+    @keyframes narams-spin {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes saurav-collapse-expand {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+
+      40% {
+        transform: scale(0);
+        opacity: 0;
+      }
+
+      60% {
+        transform: scale(0);
+        opacity: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="scene-background" aria-hidden="true">
+    <div class="scene-background__gradient"></div>
+    <canvas class="scene-background__particles" id="particle-canvas"></canvas>
+    <div class="scene-background__vignette"></div>
+  </div>
+
+  <div class="scene-content">
+    <header class="title-block">
+      <span class="title-line">Welcome to the</span>
+      <span class="title-line title-line--main">ORIGINS OF DNB</span>
+    </header>
+
+    <nav class="menu" aria-label="Game menu">
+      <hr class="menu__divider">
+      <button class="menu__option" type="button" id="start-button">Start</button>
+      <hr class="menu__divider">
+      <button class="menu__option" type="button" id="nah-button">Nah</button>
+      <hr class="menu__divider">
+    </nav>
+
+    <img
+      class="sticker sticker--dnb"
+      src="stickers/DNB_sticker.png"
+      alt="DNB"
+    >
+    <img
+      class="sticker sticker--narams"
+      src="stickers/Narams_sticker.png"
+      alt="Narams"
+    >
+    <img
+      class="sticker sticker--saurav"
+      id="saurav-sticker"
+      src="stickers/Saurav_sticker.png"
+      alt="Saurav"
+    >
+  </div>
+
+  <script src="audio/game-audio.js"></script>
+  <script>
+    GameAudio.initBgm('goofy_bgm.mp3');
+
+    document.getElementById('start-button').addEventListener('click', () => {
+      window.location.href = 'Map.html';
+    });
+
+    document.getElementById('nah-button').addEventListener('click', () => {
+      window.location.href = 'Exit.html';
+    });
+
+    const sauravSticker = document.getElementById('saurav-sticker');
+    const SAURAV_CYCLE_MS = 3000;
+    const SAURAV_TELEPORT_AT_MS = SAURAV_CYCLE_MS * 0.5;
+
+    function teleportSaurav() {
+      const padding = 32;
+      const menuSafeZone = 320;
+      const stickerSize = sauravSticker.offsetWidth || 140;
+      const minX = menuSafeZone;
+      const maxX = window.innerWidth - stickerSize - padding;
+      const minY = padding;
+      const maxY = window.innerHeight - stickerSize - padding;
+
+      if (maxX <= minX || maxY <= minY) {
+        return;
+      }
+
+      sauravSticker.style.bottom = 'auto';
+      sauravSticker.style.right = 'auto';
+      sauravSticker.style.left = `${minX + Math.random() * (maxX - minX)}px`;
+      sauravSticker.style.top = `${minY + Math.random() * (maxY - minY)}px`;
+    }
+
+    function scheduleSauravTeleports() {
+      function scheduleNext() {
+        setTimeout(() => {
+          teleportSaurav();
+          scheduleNext();
+        }, SAURAV_CYCLE_MS);
+      }
+
+      setTimeout(scheduleNext, SAURAV_TELEPORT_AT_MS);
+    }
+
+    scheduleSauravTeleports();
+
+    const particleCanvas = document.getElementById('particle-canvas');
+    const particleContext = particleCanvas.getContext('2d');
+    let particles = [];
+    let animationFrameId = null;
+
+    function createParticles(count) {
+      particles = Array.from({ length: count }, () => ({
+        x: Math.random() * particleCanvas.width,
+        y: Math.random() * particleCanvas.height,
+        radius: Math.random() * 2.2 + 0.6,
+        speedY: Math.random() * 0.35 + 0.12,
+        speedX: (Math.random() - 0.5) * 0.18,
+        opacity: Math.random() * 0.45 + 0.2,
+        twinkleSpeed: Math.random() * 0.02 + 0.008,
+        twinkleOffset: Math.random() * Math.PI * 2
+      }));
+    }
+
+    function resizeParticleCanvas() {
+      particleCanvas.width = window.innerWidth;
+      particleCanvas.height = window.innerHeight;
+      createParticles(Math.floor((window.innerWidth * window.innerHeight) / 14000));
+    }
+
+    function drawParticles(timestamp) {
+      particleContext.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+
+      particles.forEach((particle) => {
+        particle.y -= particle.speedY;
+        particle.x += particle.speedX;
+
+        if (particle.y < -10) {
+          particle.y = particleCanvas.height + 10;
+          particle.x = Math.random() * particleCanvas.width;
+        }
+
+        if (particle.x < -10) {
+          particle.x = particleCanvas.width + 10;
+        } else if (particle.x > particleCanvas.width + 10) {
+          particle.x = -10;
+        }
+
+        const twinkle = 0.55 + 0.45 * Math.sin(timestamp * particle.twinkleSpeed + particle.twinkleOffset);
+        const alpha = particle.opacity * twinkle;
+
+        particleContext.beginPath();
+        particleContext.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+        particleContext.fillStyle = `rgba(255, 240, 255, ${alpha})`;
+        particleContext.fill();
+      });
+
+      animationFrameId = requestAnimationFrame(drawParticles);
+    }
+
+    window.addEventListener('resize', resizeParticleCanvas);
+    resizeParticleCanvas();
+    animationFrameId = requestAnimationFrame(drawParticles);
+  </script>
+</body>
+</html>

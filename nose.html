@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nose</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      background-color: #1a0a2e;
+      background-image: url('stickers/images/Nose/castle.jpg');
+      background-repeat: no-repeat;
+      background-position: center center;
+      background-size: cover;
+      transition: background-image 0.6s ease;
+    }
+
+    body.is-interior {
+      background-image: url('stickers/images/Nose/interior.jpg');
+    }
+
+    .scene-content {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+    }
+
+    .scene-content.is-locked .sticker--draggable {
+      pointer-events: none;
+      cursor: default;
+    }
+
+    .entry-hotspot {
+      position: absolute;
+      width: 90px;
+      height: 140px;
+      border: none;
+      border-radius: 0;
+      background-color: transparent;
+      cursor: pointer;
+      top: 55%;
+      left: 49%;
+      transform: translate(-50%, -50%);
+      padding: 0;
+    }
+
+    .entry-hotspot:focus-visible {
+      outline: none;
+    }
+
+    .gorgon-hotspot {
+      position: absolute;
+      width: 48px;
+      height: 48px;
+      border: none;
+      border-radius: 50%;
+      background-color: transparent;
+      cursor: pointer;
+      top: 44%;
+      left: 49.5%;
+      transform: translate(-50%, -50%);
+      padding: 0;
+      z-index: 3;
+    }
+
+    .gorgon-hotspot:focus-visible {
+      outline: none;
+    }
+
+    .sticker {
+      position: absolute;
+      width: var(--sticker-size);
+      max-width: var(--sticker-size);
+      height: auto;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    .sticker--draggable {
+      pointer-events: auto;
+      cursor: grab;
+      touch-action: none;
+      z-index: 2;
+    }
+
+    .sticker--draggable.is-dragging {
+      cursor: grabbing;
+      z-index: 10;
+    }
+
+    .sticker--on-face {
+      z-index: 4;
+      pointer-events: none;
+      transition: left 0.35s ease, top 0.35s ease, width 0.35s ease, transform 0.35s ease;
+    }
+
+    .sticker--honking {
+      animation: clown-honk 0.35s ease-in-out infinite;
+    }
+
+    @keyframes clown-honk {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.14); }
+    }
+
+    .sticker--on-face.sticker--flipped {
+      transform: rotate(180deg);
+    }
+
+    .sticker--on-face.sticker--flipped.sticker--honking {
+      animation: clown-honk-flipped 0.35s ease-in-out infinite;
+    }
+
+    @keyframes clown-honk-flipped {
+      0%, 100% { transform: rotate(180deg) scale(1); }
+      50% { transform: rotate(180deg) scale(1.14); }
+    }
+
+    .sticker--discarded {
+      z-index: 2;
+      pointer-events: none;
+      transition: left 0.4s ease, top 0.4s ease;
+    }
+
+    .sticker--gorgon {
+      --sticker-size: min(42vh, 360px);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .pile-arrow {
+      position: fixed;
+      left: 9%;
+      top: 34%;
+      z-index: 3;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      color: #f9e99a;
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      line-height: 1;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.85);
+      pointer-events: none;
+      animation: arrow-bounce 0.75s ease-in-out infinite;
+    }
+
+    .pile-arrow.is-visible {
+      display: flex;
+    }
+
+    @keyframes arrow-bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(10px); }
+    }
+
+    .dialogue-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(0, 0, 0, 0.35);
+      cursor: pointer;
+    }
+
+    .dialogue-overlay.is-active {
+      display: flex;
+    }
+
+    .dialogue-box {
+      width: min(820px, 94vw);
+      padding: 22px 28px;
+      border: 3px solid rgba(249, 233, 154, 0.85);
+      border-radius: 12px;
+      background: rgba(59, 7, 100, 0.94);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+      cursor: pointer;
+    }
+
+    .dialogue-speaker {
+      margin-bottom: 10px;
+      color: #f9e99a;
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .dialogue-speaker--player {
+      color: #c4b5fd;
+    }
+
+    .dialogue-text {
+      color: #ffffff;
+      font-size: 1.08rem;
+      line-height: 1.55;
+      white-space: pre-wrap;
+    }
+
+    .dialogue-cursor {
+      display: inline-block;
+      width: 2px;
+      margin-left: 2px;
+      background-color: #ffffff;
+      animation: blink 0.8s step-end infinite;
+      vertical-align: text-bottom;
+      height: 1.05em;
+    }
+
+    .dialogue-cursor--hidden {
+      visibility: hidden;
+    }
+
+    .dialogue-continue {
+      margin-top: 16px;
+      color: #f9e99a;
+      font-size: 0.95rem;
+      font-style: italic;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .dialogue-continue--visible {
+      opacity: 1;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    .sticker--legendary-nose {
+      z-index: 25;
+      pointer-events: none;
+    }
+
+    .map-return {
+      position: fixed;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 120;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 22px;
+      border: 2px solid #f9e99a;
+      border-radius: 999px;
+      background: rgba(59, 7, 100, 0.92);
+      color: #f9e99a;
+      font-size: 1rem;
+      cursor: pointer;
+      pointer-events: auto;
+    }
+
+    .map-return.is-visible { display: flex; }
+
+    .map-return__arrow {
+      font-size: 1.4rem;
+      line-height: 1;
+    }
+
+    .instructions {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 50;
+      max-width: min(360px, 88vw);
+      padding: 16px 20px;
+      margin: 0;
+      list-style: none;
+      border: 3px solid rgba(249, 233, 154, 0.85);
+      border-radius: 12px;
+      background: rgba(59, 7, 100, 0.92);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+    }
+
+    .instructions--hidden { display: none; }
+
+    .instructions__item {
+      color: #ffffff;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      margin-bottom: 8px;
+    }
+
+    .instructions__item:last-child { margin-bottom: 0; }
+
+    .instructions__item--done {
+      text-decoration: line-through;
+      opacity: 0.65;
+      color: #d8c4f0;
+    }
+
+    .instructions__item--current {
+      color: #f9e99a;
+      font-weight: 700;
+      text-shadow: 0 0 12px rgba(249, 233, 154, 0.35);
+    }
+
+    .sticker--on-face.sticker--banana-mustache {
+      --banana-rotate: 20deg;
+      transform: rotate(var(--banana-rotate));
+      transform-origin: center center;
+    }
+  </style>
+</head>
+<body>
+  <ul class="instructions" id="instructions" aria-live="polite"></ul>
+
+  <div class="dialogue-overlay" id="dialogue-overlay">
+    <div class="dialogue-box" id="dialogue-box">
+      <p class="dialogue-speaker" id="dialogue-speaker"></p>
+      <p class="dialogue-text">
+        <span id="dialogue-typewriter"></span><span id="dialogue-cursor" class="dialogue-cursor"></span>
+      </p>
+      <p class="dialogue-continue" id="dialogue-continue">&lt;click to continue&gt;</p>
+    </div>
+  </div>
+
+  <div class="pile-arrow" id="pile-arrow" aria-hidden="true">↓</div>
+
+  <button class="map-return" id="map-return" type="button">
+    <span class="map-return__arrow" aria-hidden="true">→</span>
+    <span>Click to go back to Map</span>
+  </button>
+
+  <main class="scene-content" id="scene-content">
+    <button class="entry-hotspot" id="entry-hotspot" type="button" aria-label="Enter the castle"></button>
+  </main>
+
+  <script src="audio/game-audio.js"></script>
+  <script>
+    GameAudio.initBgm('dungeon_bgm.mp3');
+  </script>
+  <script>
+    const ASSET_BASE = 'stickers/images/Nose/';
+    const TYPE_SPEED_MS = 5;
+    const RIGHT_SIDE_MARGIN_PX = 40;
+    const RIGHT_STACK_START_RATIO = 0.08;
+    const RIGHT_STACK_ROW_HEIGHT_PX = 48;
+    const LIGHTBULB_METAL_ANCHOR_RATIO = 0.36;
+
+    const INSTRUCTIONS = [
+      'Enter the castle.'
+    ];
+
+    const PILE_ITEMS = [
+      { id: 'baguette', file: 'baguette_sticker.png', size: 88, offsetX: 0, offsetY: 0 },
+      { id: 'banana', file: 'banana_sticker.png', size: 72, offsetX: 34, offsetY: -18 },
+      { id: 'clown-nose', file: 'clown_nose_sticker.png', size: 64, offsetX: -22, offsetY: 24 },
+      { id: 'lightbulb', file: 'lightbulb_sticker.png', size: 70, offsetX: 48, offsetY: 28 },
+      { id: 'pig', file: 'pig_sticker.png', size: 82, offsetX: 12, offsetY: 52 },
+      { id: 'rubber', file: 'Rubber_sticker.png', size: 68, offsetX: -38, offsetY: 58 },
+      { id: 'rudolph', file: 'Rudolph_sticker.png', size: 90, offsetX: 56, offsetY: -8 },
+      { id: 'trunk', file: 'trunk_sticker.png', size: 76, offsetX: 24, offsetY: 74 }
+    ];
+
+    const NOSE_REACTIONS = {
+      rudolph: {
+        sizeFactor: 0.7,
+        audio: 'audio/rudolph-carol-snip.mp3',
+        dialogue: "I AIN'T NO DAMN RED NOSED FLYING DEER. TAKE THIS OFF MA FACE."
+      },
+      banana: {
+        sizeFactor: 1.3,
+        placement: 'banana-mustache',
+        dialogue: [
+          'By the stars above...',
+          'My sacred celestial nose has been replaced.',
+          'With a banana.',
+          'A BANANA.',
+          'I now look like if Mario and Donkey Kong made a mistake together.',
+          'This is truly the darkest day in my dignified history.',
+          'Take this muffin stuffing off my face and FIND ME-A MY NOSE-A.',
+          "Ahhh shit I'm already turning."
+        ]
+      },
+      baguette: {
+        sizeFactor: 1.2,
+        placement: 'baguette-tip',
+        dialogue: [
+          'Sacrebleu...',
+          'I told one tiny lie.',
+          'One.',
+          'Now someone has attached an entire baguette to the end of my nose.',
+          'A baguette belongs in a basket.',
+          'Not protruding from my face like a medieval jousting lance.',
+          'Am I a boy?',
+          'Am I a puppet?',
+          'Am I a loaf of bread?',
+          'Nobody knows anymore.',
+          'Yesterday a duck tried to eat my face.',
+          'At this rate, my next lie will open a bakery franchise.',
+          "Please find my real nose before I become France's longest sandwich."
+        ]
+      },
+      pig: {
+        sizeFactor: 0.7,
+        audio: 'audio/oink.mp3',
+        dialogue: "Why are you looking at me like that? I'm literally made of stone."
+      },
+      'clown-nose': {
+        sizeFactor: 0.85,
+        audio: 'audio/clown.mp3',
+        honkAnimation: true,
+        dialogue: 'I have reached the pinnacle of comedy. Kill me now.'
+      },
+      lightbulb: {
+        placement: 'lightbulb-metal',
+        dialogue: [
+          'Ah! At last!',
+          'The universe has recognised my genius.',
+          'I had a bright idea...',
+          'And now I am the bright idea.',
+          'Do you realise what this means?',
+          'I no longer think outside the box.',
+          'I illuminate it.',
+          'Unfortunately, this light bulb appears to be where my nose used to be.',
+          'Please remove it before I accidentally invent electricity again.'
+        ]
+      },
+      rubber: {
+        audio: 'audio/chicken.mp3',
+        dialogue: 'Those were the cries of my soul.'
+      },
+      trunk: {
+        sizeFactor: 1.1,
+        audio: 'audio/trunk.mp3',
+        dialogue: 'Surprisingly these fit my nose pretty well. But no.'
+      }
+    };
+
+    const ENDING_DIALOGUE = [
+      { speaker: 'gorgon', text: 'AHAHAHAHA HAHAHAHHAHA HAHAHAHAHAHAHAHAHHAHAHAHAH' },
+      { speaker: 'gorgon', text: "This is too funny. What's next?" },
+      { speaker: 'player', text: 'Uhhh..... hate to say this but there is no next. We went through the entire pile.' },
+      { speaker: 'gorgon', text: 'HAHAHAHA-' },
+      { speaker: 'gorgon', text: "..... what? That's impossible. We still havn't found my nose yet." },
+      { speaker: 'player', text: 'Idk what to say man, the pile is over.' },
+      { speaker: 'gorgon', text: 'But how? I saw it roll under there myself a 1000 years ago, right after I blasted Pennywise right through that pillar.' },
+      { speaker: 'player', text: '... how long ago again?' },
+      { speaker: 'gorgon', text: 'A 1000 years. Why?' },
+      { speaker: 'player', text: 'Oh. My. God. Bitch your nose probably degraded to dust by now.' },
+      { speaker: 'gorgon', text: '..... well shit. I did not think of that.' },
+      { speaker: 'player', text: 'The good news is you have a ton of noses to use rotatingly AND we had a great time together.' },
+      { speaker: 'gorgon', text: 'Very true very true.' },
+      { speaker: 'player', text: 'And that makes us friends now yeah?' },
+      { speaker: 'gorgon', text: 'Ah ofcourse! My first friend in a very long time.' },
+      { speaker: 'player', text: "So now that I'm your friend, and that it's my birthday today, I deserve a gift right?" },
+      { speaker: 'gorgon', text: "Absolutely my friend! But I don't know much else about you so, what would you want as a gift?" },
+      { speaker: 'player', text: "I'm so glad you asked! I'd like the Arcane Ingredient please." },
+      { speaker: 'gorgon', text: "You know that's not a very friend-ish thing to do right." },
+      { speaker: 'player', text: "Well it doesn't mean I'm not your friend but I still need it. Pleasssssssssssssseeee?" },
+      { speaker: 'gorgon', text: "Hmmm..... Alright fine. Only because the people who entrusted this to me are long dead and their descendants don't even know I exist. Also we had a good time together so." },
+      { speaker: 'player', text: 'YAYYYYY THANKS GORGY.' },
+      { speaker: 'gorgon', text: 'Gorgy? Heh... why not.' }
+    ];
+
+    const DIALOGUE = [
+      { speaker: 'gorgon', text: 'WHO DARES TO ENTER MY CASTLE?!?!?!' },
+      { speaker: 'player', text: "Big stone boy, I don't mean no harm. I came looking for the Arcane ingredient hidden in this castle." },
+      { speaker: 'gorgon', text: 'You have the guts to not only stand in my presence but speak back to me after my roar? Impressive young lady.' },
+      { speaker: 'gorgon', text: "You seek my treasure yet do not bring neither gifts nor achievements. What are your qualifications? Who are your referrals? Where's my gate guard?" },
+      { speaker: 'player', text: "Uhhh... well I bring no gifts, I have some achievements & qualifications but I highly doubt they matter in this situation. I have 1 braincell so my referral is my other stupid-half, and there was no gate guard present. I pretty much just walked right in." },
+      { speaker: 'gorgon', text: "The gate guards gone? Well that's fantastic, now I need a new one. Hmmm.... hey would you like a job?" },
+      { speaker: 'player', text: "If it wasn't for the absolutely terrible working conditions and what's clearly a grumpy, old and terrible boss, I'd have taken the offer. A job offer that fast in this economy, jeez." },
+      { speaker: 'gorgon', text: 'Hmph! Well then, if you have nothing else to say, LEAVE.' },
+      { speaker: 'player', text: "Hold up I still want the treasure. C'mon theres got to be something I can do for you?" },
+      { speaker: 'gorgon', text: 'Hmmm...' },
+      { speaker: 'gorgon', text: '.....' },
+      { speaker: 'gorgon', text: '........' },
+      { speaker: 'gorgon', text: '..........' },
+      { speaker: 'gorgon', text: "........... well there's something." },
+      { speaker: 'player', text: "(Took you long enough.) Ok! Let's hear it." },
+      { speaker: 'gorgon', text: 'Find my nose.' },
+      { speaker: 'player', text: '.....' },
+      { speaker: 'player', text: '........' },
+      { speaker: 'player', text: '..........' },
+      { speaker: 'player', text: '........... what.' },
+      { speaker: 'gorgon', text: 'Took you long enough. I said, I want you to find my nose for me.' },
+      { speaker: 'player', text: 'I have too many damn Qs but I need what I came for faster. Give me a clue.' },
+      { speaker: 'gorgon', text: 'I can do you one better. You see that pile of items there?', showArrow: true },
+      { speaker: 'gorgon', text: 'Those are actually the noses of all my previous enemies. My nose accidentally got mixed up among them. Sort through them and find my nose.' },
+      { speaker: 'player', text: "This is crazy, this is nuts, this is stupid, this is what I got to do. Let's get to it." }
+    ];
+
+    const sceneContent = document.getElementById('scene-content');
+    const entryHotspot = document.getElementById('entry-hotspot');
+    const dialogueOverlay = document.getElementById('dialogue-overlay');
+    const dialogueBox = document.getElementById('dialogue-box');
+    const dialogueSpeaker = document.getElementById('dialogue-speaker');
+    const dialogueTypewriter = document.getElementById('dialogue-typewriter');
+    const dialogueCursor = document.getElementById('dialogue-cursor');
+    const dialogueContinue = document.getElementById('dialogue-continue');
+    const pileArrow = document.getElementById('pile-arrow');
+    const mapReturn = document.getElementById('map-return');
+    const instructionsPanel = document.getElementById('instructions');
+    const victoryAudio = new Audio('audio/victory.mp3');
+
+    let instructionStep = 0;
+
+    let gorgonHotspot = null;
+    let legendaryNoseSticker = null;
+    let dialogueIndex = 0;
+    let dialogueIsTyping = false;
+    let dialogueWaitingForClick = false;
+    let challengeStarted = false;
+    let isReacting = false;
+    let reactionDialogueLines = null;
+    let reactionDialogueLineIndex = 0;
+    let reactionDialogueOnComplete = null;
+    let discardedNoseCount = 0;
+    let endingTriggered = false;
+    let isVictory = false;
+
+    function lockScene() {
+      sceneContent.classList.add('is-locked');
+    }
+
+    function unlockScene() {
+      sceneContent.classList.remove('is-locked');
+    }
+
+    function renderInstructions() {
+      if (instructionStep >= INSTRUCTIONS.length) {
+        instructionsPanel.classList.add('instructions--hidden');
+        return;
+      }
+
+      instructionsPanel.classList.remove('instructions--hidden');
+      instructionsPanel.replaceChildren();
+
+      INSTRUCTIONS.forEach((text, index) => {
+        if (index > instructionStep) {
+          return;
+        }
+
+        const item = document.createElement('li');
+        item.className = 'instructions__item';
+        if (index < instructionStep) {
+          item.classList.add('instructions__item--done');
+        } else if (index === instructionStep) {
+          item.classList.add('instructions__item--current');
+        }
+        item.textContent = text;
+        instructionsPanel.appendChild(item);
+      });
+    }
+
+    function advanceInstruction() {
+      instructionStep += 1;
+      renderInstructions();
+    }
+
+    function createSticker(className, id, src, alt) {
+      const sticker = document.createElement('img');
+      sticker.className = className;
+      sticker.id = id;
+      sticker.dataset.stickerId = id;
+      sticker.src = src;
+      sticker.alt = alt;
+      return sticker;
+    }
+
+    function placeGorgon() {
+      const gorgon = createSticker(
+        'sticker sticker--gorgon',
+        'gorgon-sticker',
+        `${ASSET_BASE}gorgon_sticker.png`,
+        'Gorgon'
+      );
+      sceneContent.appendChild(gorgon);
+    }
+
+    function placeGorgonHotspot() {
+      gorgonHotspot = document.createElement('button');
+      gorgonHotspot.className = 'gorgon-hotspot';
+      gorgonHotspot.id = 'gorgon-hotspot';
+      gorgonHotspot.type = 'button';
+      gorgonHotspot.setAttribute('aria-label', 'Gorgon nose');
+      sceneContent.appendChild(gorgonHotspot);
+    }
+
+    function placeNosePile() {
+      const pileAnchorX = window.innerWidth * 0.09;
+      const pileAnchorY = window.innerHeight * 0.54;
+
+      PILE_ITEMS.forEach((item) => {
+        const sticker = createSticker(
+          'sticker sticker--draggable',
+          `nose-${item.id}`,
+          `${ASSET_BASE}${item.file}`,
+          item.id
+        );
+        sticker.style.setProperty('--sticker-size', `${item.size}px`);
+        sticker.style.left = `${pileAnchorX + item.offsetX}px`;
+        sticker.style.top = `${pileAnchorY + item.offsetY}px`;
+        sceneContent.appendChild(sticker);
+        bindDraggable(sticker);
+      });
+    }
+
+    function resetDialoguePanel() {
+      dialogueTypewriter.textContent = '';
+      dialogueContinue.classList.remove('dialogue-continue--visible');
+      dialogueCursor.classList.remove('dialogue-cursor--hidden');
+      dialogueWaitingForClick = false;
+    }
+
+    function showContinuePrompt() {
+      dialogueWaitingForClick = true;
+      dialogueCursor.classList.add('dialogue-cursor--hidden');
+      dialogueContinue.classList.add('dialogue-continue--visible');
+    }
+
+    function typeDialogueLine(text, onComplete) {
+      dialogueIsTyping = true;
+      let charIndex = 0;
+      const lineText = GameAudio.replacePlayerText(text);
+
+      function typeNextCharacter() {
+        if (charIndex < lineText.length) {
+          const char = lineText.charAt(charIndex);
+          dialogueTypewriter.textContent += char;
+          GameAudio.playTypeChar(char);
+          charIndex += 1;
+          window.setTimeout(typeNextCharacter, TYPE_SPEED_MS);
+          return;
+        }
+        dialogueIsTyping = false;
+        onComplete();
+      }
+
+      typeNextCharacter();
+    }
+
+    function startDialogueLine() {
+      const line = DIALOGUE[dialogueIndex];
+      resetDialoguePanel();
+
+      dialogueSpeaker.textContent = line.speaker === 'gorgon' ? 'Gorgon' : 'DNB';
+      dialogueSpeaker.classList.toggle('dialogue-speaker--player', line.speaker === 'player');
+
+      if (line.showArrow) {
+        pileArrow.classList.add('is-visible');
+        pileArrow.setAttribute('aria-hidden', 'false');
+      }
+
+      typeDialogueLine(line.text, showContinuePrompt);
+    }
+
+    function startDialogue() {
+      dialogueOverlay.classList.add('is-active');
+      lockScene();
+      startDialogueLine();
+    }
+
+    function completeDialogue() {
+      dialogueOverlay.classList.remove('is-active');
+      challengeStarted = true;
+      unlockScene();
+    }
+
+    function hidePileArrow() {
+      pileArrow.classList.remove('is-visible');
+      pileArrow.setAttribute('aria-hidden', 'true');
+    }
+
+    function normalizeDialogueLine(line) {
+      if (typeof line === 'string') {
+        return { speaker: 'gorgon', text: line };
+      }
+      return line;
+    }
+
+    function startSequenceDialogueLine() {
+      const line = normalizeDialogueLine(reactionDialogueLines[reactionDialogueLineIndex]);
+      resetDialoguePanel();
+      dialogueSpeaker.textContent = line.speaker === 'player' ? 'DNB' : 'Gorgon';
+      dialogueSpeaker.classList.toggle('dialogue-speaker--player', line.speaker === 'player');
+      typeDialogueLine(line.text, showContinuePrompt);
+    }
+
+    function showDialogueSequence(lines, onComplete) {
+      reactionDialogueLines = (Array.isArray(lines) ? lines : [lines]).map(normalizeDialogueLine);
+      reactionDialogueLineIndex = 0;
+      reactionDialogueOnComplete = onComplete;
+      dialogueOverlay.classList.add('is-active');
+      lockScene();
+      startSequenceDialogueLine();
+    }
+
+    function advanceReactionDialogue() {
+      reactionDialogueLineIndex += 1;
+      if (reactionDialogueLineIndex >= reactionDialogueLines.length) {
+        const onComplete = reactionDialogueOnComplete;
+        reactionDialogueLines = null;
+        reactionDialogueOnComplete = null;
+        dialogueOverlay.classList.remove('is-active');
+        dialogueWaitingForClick = false;
+        onComplete();
+        return;
+      }
+
+      startSequenceDialogueLine();
+    }
+
+    function advanceDialogue() {
+      if (dialogueIsTyping || !dialogueWaitingForClick) {
+        return;
+      }
+
+      if (reactionDialogueLines) {
+        advanceReactionDialogue();
+        return;
+      }
+
+      if (DIALOGUE[dialogueIndex].showArrow) {
+        hidePileArrow();
+      }
+
+      dialogueIndex += 1;
+      if (dialogueIndex >= DIALOGUE.length) {
+        completeDialogue();
+        return;
+      }
+
+      startDialogueLine();
+    }
+
+    function wait(ms) {
+      return new Promise((resolve) => window.setTimeout(resolve, ms));
+    }
+
+    function isCenterOverTarget(sticker, target) {
+      const stickerRect = sticker.getBoundingClientRect();
+      const centerX = stickerRect.left + stickerRect.width / 2;
+      const centerY = stickerRect.top + stickerRect.height / 2;
+      const targetRect = target.getBoundingClientRect();
+      return (
+        centerX >= targetRect.left
+        && centerX <= targetRect.right
+        && centerY >= targetRect.top
+        && centerY <= targetRect.bottom
+      );
+    }
+
+    function getStickerSize(sticker) {
+      const sizeValue = getComputedStyle(sticker).getPropertyValue('--sticker-size').trim();
+      if (sizeValue.endsWith('px')) {
+        return Number.parseFloat(sizeValue);
+      }
+      return sticker.offsetWidth;
+    }
+
+    function centerStickerOnHotspot(sticker, hotspot) {
+      const hotspotRect = hotspot.getBoundingClientRect();
+      const width = sticker.offsetWidth;
+      const height = sticker.offsetHeight;
+      sticker.style.left = `${hotspotRect.left + hotspotRect.width / 2 - width / 2}px`;
+      sticker.style.top = `${hotspotRect.top + hotspotRect.height / 2 - height / 2}px`;
+    }
+
+    function placeBaguetteTipOnHotspot(sticker, hotspot) {
+      const hotspotRect = hotspot.getBoundingClientRect();
+      const tipX = hotspotRect.left + hotspotRect.width / 2;
+      const tipY = hotspotRect.top + hotspotRect.height / 2;
+      sticker.style.left = `${tipX}px`;
+      sticker.style.top = `${tipY - sticker.offsetHeight / 2}px`;
+    }
+
+    function placeLightbulbMetalOnHotspot(sticker, hotspot) {
+      sticker.classList.add('sticker--flipped');
+      const hotspotRect = hotspot.getBoundingClientRect();
+      const tipX = hotspotRect.left + hotspotRect.width / 2;
+      const tipY = hotspotRect.top + hotspotRect.height / 2;
+      const width = sticker.offsetWidth;
+      const height = sticker.offsetHeight;
+      sticker.style.left = `${tipX - width / 2}px`;
+      sticker.style.top = `${tipY - height * LIGHTBULB_METAL_ANCHOR_RATIO}px`;
+    }
+
+    function placeBananaMustacheOnHotspot(sticker, hotspot) {
+      sticker.classList.add('sticker--banana-mustache');
+      centerStickerOnHotspot(sticker, hotspot);
+    }
+
+    function applyStickerPlacement(sticker, placement) {
+      if (placement === 'baguette-tip') {
+        placeBaguetteTipOnHotspot(sticker, gorgonHotspot);
+        return;
+      }
+
+      if (placement === 'lightbulb-metal') {
+        placeLightbulbMetalOnHotspot(sticker, gorgonHotspot);
+        return;
+      }
+
+      if (placement === 'banana-mustache') {
+        placeBananaMustacheOnHotspot(sticker, gorgonHotspot);
+        return;
+      }
+
+      centerStickerOnHotspot(sticker, gorgonHotspot);
+    }
+
+    function countTriedNoses() {
+      return document.querySelectorAll('[data-nose-tried="true"]').length;
+    }
+
+    function finishNoseReaction(sticker) {
+      sticker.style.transform = '';
+      sticker.classList.remove(
+        'sticker--on-face',
+        'sticker--honking',
+        'sticker--flipped',
+        'sticker--banana-mustache'
+      );
+      sticker.classList.add('sticker--discarded');
+      sticker.dataset.noseTried = 'true';
+      placeStickerOnRight(sticker);
+      isReacting = false;
+      unlockScene();
+      checkAllNosesTried();
+    }
+
+    function checkAllNosesTried() {
+      if (endingTriggered || isVictory || countTriedNoses() < PILE_ITEMS.length) {
+        return;
+      }
+
+      endingTriggered = true;
+      window.setTimeout(() => {
+        showDialogueSequence(ENDING_DIALOGUE, startVictorySequence);
+      }, 500);
+    }
+
+    function positionMapReturnBelowNose() {
+      if (!legendaryNoseSticker) {
+        return;
+      }
+
+      const noseRect = legendaryNoseSticker.getBoundingClientRect();
+      mapReturn.style.top = `${noseRect.bottom + 16}px`;
+      mapReturn.style.left = `${noseRect.left + noseRect.width / 2}px`;
+      mapReturn.style.transform = 'translateX(-50%)';
+    }
+
+    async function startVictorySequence() {
+      isVictory = true;
+      lockScene();
+
+      const gorgonSticker = document.getElementById('gorgon-sticker');
+      const gorgonRect = gorgonSticker.getBoundingClientRect();
+      const startSize = 80;
+
+      legendaryNoseSticker = createSticker(
+        'sticker sticker--legendary-nose',
+        'legendary-nose-sticker',
+        `${ASSET_BASE}nose_sticker.png`,
+        'Legendary nose'
+      );
+      legendaryNoseSticker.style.setProperty('--sticker-size', `${startSize}px`);
+      legendaryNoseSticker.style.left = `${gorgonRect.left + gorgonRect.width / 2 - startSize / 2}px`;
+      legendaryNoseSticker.style.top = `${gorgonRect.top + gorgonRect.height / 2 - startSize / 2}px`;
+      sceneContent.appendChild(legendaryNoseSticker);
+
+      victoryAudio.currentTime = 0;
+      victoryAudio.play().catch(() => {});
+
+      await wait(200);
+
+      const targetSize = Math.min(window.innerWidth, window.innerHeight) * 0.42;
+      legendaryNoseSticker.style.transition = 'left 2.2s ease, top 2.2s ease, width 2.2s ease';
+      legendaryNoseSticker.style.left = `${window.innerWidth / 2 - targetSize / 2}px`;
+      legendaryNoseSticker.style.top = `${window.innerHeight / 2 - targetSize / 2}px`;
+      legendaryNoseSticker.style.setProperty('--sticker-size', `${targetSize}px`);
+
+      await wait(2300);
+
+      positionMapReturnBelowNose();
+      mapReturn.classList.add('is-visible');
+    }
+
+    function placeStickerOnRight(sticker) {
+      const width = sticker.offsetWidth;
+      const x = window.innerWidth - width - RIGHT_SIDE_MARGIN_PX;
+      const y = window.innerHeight * RIGHT_STACK_START_RATIO
+        + discardedNoseCount * RIGHT_STACK_ROW_HEIGHT_PX;
+      sticker.style.left = `${x}px`;
+      sticker.style.top = `${y}px`;
+      discardedNoseCount += 1;
+    }
+
+    function playAudio(audio) {
+      return new Promise((resolve) => {
+        const onEnded = () => {
+          audio.removeEventListener('ended', onEnded);
+          audio.removeEventListener('error', onError);
+          resolve();
+        };
+        const onError = () => {
+          audio.removeEventListener('ended', onEnded);
+          audio.removeEventListener('error', onError);
+          resolve();
+        };
+        audio.addEventListener('ended', onEnded);
+        audio.addEventListener('error', onError);
+        audio.currentTime = 0;
+        audio.play().catch(onError);
+      });
+    }
+
+    function getNoseIdFromSticker(sticker) {
+      return sticker.dataset.stickerId.replace(/^nose-/, '');
+    }
+
+    async function runNoseReaction(sticker, reaction) {
+      isReacting = true;
+      lockScene();
+
+      sticker.classList.remove('is-dragging');
+      sticker.classList.remove('sticker--draggable');
+      sticker.classList.add('sticker--on-face');
+
+      const sizeFactor = reaction.sizeFactor ?? 1;
+      if (sizeFactor !== 1) {
+        const currentSize = getStickerSize(sticker);
+        sticker.style.setProperty('--sticker-size', `${currentSize * sizeFactor}px`);
+      }
+
+      await wait(50);
+      applyStickerPlacement(sticker, reaction.placement ?? 'center');
+      await wait(380);
+
+      if (reaction.honkAnimation) {
+        sticker.classList.add('sticker--honking');
+      }
+
+      if (reaction.audio) {
+        await playAudio(new Audio(reaction.audio));
+      }
+
+      if (reaction.honkAnimation) {
+        sticker.classList.remove('sticker--honking');
+      }
+
+      showDialogueSequence(reaction.dialogue, () => {
+        finishNoseReaction(sticker);
+      });
+    }
+
+    function handleNoseDrop(sticker) {
+      if (!challengeStarted || isReacting || sticker.dataset.noseTried === 'true') {
+        return;
+      }
+
+      if (!gorgonHotspot || !isCenterOverTarget(sticker, gorgonHotspot)) {
+        return;
+      }
+
+      const noseId = getNoseIdFromSticker(sticker);
+      const reaction = NOSE_REACTIONS[noseId];
+      if (!reaction) {
+        return;
+      }
+
+      runNoseReaction(sticker, reaction);
+    }
+
+    function enterCastle() {
+      advanceInstruction();
+      document.body.classList.add('is-interior');
+      entryHotspot.remove();
+      placeGorgon();
+      placeGorgonHotspot();
+      placeNosePile();
+      startDialogue();
+    }
+
+    function normalizeStickerPosition(sticker) {
+      const rect = sticker.getBoundingClientRect();
+      sticker.style.left = `${rect.left}px`;
+      sticker.style.top = `${rect.top}px`;
+    }
+
+    function bindDraggable(sticker) {
+      sticker.addEventListener('pointerdown', (event) => {
+        if (!challengeStarted || isVictory || isReacting || sceneContent.classList.contains('is-locked')) {
+          return;
+        }
+        event.preventDefault();
+        sticker.setPointerCapture(event.pointerId);
+        startDrag(sticker, event.clientX, event.clientY);
+      });
+    }
+
+    function startDrag(sticker, clientX, clientY) {
+      normalizeStickerPosition(sticker);
+      const rect = sticker.getBoundingClientRect();
+      const offsetX = clientX - rect.left;
+      const offsetY = clientY - rect.top;
+      sticker.classList.add('is-dragging');
+
+      function moveAt(x, y) {
+        sticker.style.left = `${x - offsetX}px`;
+        sticker.style.top = `${y - offsetY}px`;
+      }
+
+      function onPointerMove(event) {
+        moveAt(event.clientX, event.clientY);
+      }
+
+      function onPointerUp() {
+        sticker.classList.remove('is-dragging');
+        handleNoseDrop(sticker);
+        window.removeEventListener('pointermove', onPointerMove);
+        window.removeEventListener('pointerup', onPointerUp);
+      }
+
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', onPointerUp);
+    }
+
+    entryHotspot.addEventListener('click', enterCastle);
+
+    mapReturn.addEventListener('click', () => {
+      localStorage.setItem('nose-challenge-complete', 'true');
+      sessionStorage.setItem('nose-map-animate', 'true');
+      window.location.href = 'Map.html';
+    });
+
+    window.addEventListener('resize', () => {
+      if (isVictory && legendaryNoseSticker) {
+        positionMapReturnBelowNose();
+      }
+    });
+
+    dialogueOverlay.addEventListener('click', advanceDialogue);
+    dialogueBox.addEventListener('click', (event) => {
+      event.stopPropagation();
+      advanceDialogue();
+    });
+
+    renderInstructions();
+  </script>
+</body>
+</html>

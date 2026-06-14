@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Map</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      color: #ffffff;
+    }
+
+    .scene-background {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      background: #3b0764;
+    }
+
+    .scene-background__gradient {
+      position: absolute;
+      inset: -20%;
+      background: linear-gradient(
+        135deg,
+        #2e1065 0%,
+        #6b21a8 25%,
+        #7e22ce 50%,
+        #581c87 75%,
+        #4c1d95 100%
+      );
+      background-size: 300% 300%;
+      animation: gradient-drift 14s ease-in-out infinite;
+    }
+
+    .scene-background__gradient::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 18% 22%, rgba(236, 72, 153, 0.28), transparent 42%),
+        radial-gradient(circle at 82% 78%, rgba(167, 139, 250, 0.22), transparent 48%),
+        radial-gradient(circle at 62% 18%, rgba(192, 132, 252, 0.18), transparent 38%);
+      animation: glow-drift 18s ease-in-out infinite alternate;
+    }
+
+    .scene-background__vignette {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at center, transparent 35%, rgba(20, 0, 40, 0.55) 100%),
+        radial-gradient(ellipse at 18% 18%, rgba(255, 255, 255, 0.08), transparent 32%);
+      pointer-events: none;
+    }
+
+    @keyframes gradient-drift {
+      0%, 100% {
+        background-position: 0% 50%;
+        transform: scale(1);
+      }
+
+      50% {
+        background-position: 100% 50%;
+        transform: scale(1.05);
+      }
+    }
+
+    @keyframes glow-drift {
+      0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 0.85;
+      }
+
+      100% {
+        transform: translate(3%, -2%) scale(1.08);
+        opacity: 1;
+      }
+    }
+
+    .scene-content {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+    }
+
+    .map-path {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .map-path__line {
+      fill: none;
+      stroke: #f9e99a;
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 12 8;
+    }
+
+    .sticker {
+      position: absolute;
+      max-width: var(--sticker-size);
+      width: var(--sticker-size);
+      height: auto;
+      pointer-events: none;
+      user-select: none;
+      z-index: 1;
+    }
+
+    .sticker--great-map {
+      --sticker-size: 280px;
+      top: 16px;
+      left: 16px;
+    }
+
+    .ingredient-checklist {
+      position: absolute;
+      top: 308px;
+      left: 16px;
+      z-index: 3;
+      width: min(300px, 34vw);
+      padding: 14px 18px;
+      border: 2px solid rgba(249, 233, 154, 0.75);
+      border-radius: 10px;
+      background: rgba(59, 7, 100, 0.88);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      list-style: none;
+      pointer-events: none;
+    }
+
+    .ingredient-checklist__item {
+      color: #ffffff;
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+
+    .ingredient-checklist__item + .ingredient-checklist__item {
+      margin-top: 8px;
+    }
+
+    .ingredient-checklist__item.is-revealed {
+      color: #f9e99a;
+      font-weight: 600;
+    }
+
+    .sticker--locked {
+      filter: brightness(0.42) grayscale(0.3);
+      pointer-events: none;
+      cursor: default;
+    }
+
+    .sticker--dnb {
+      --sticker-size: 120px;
+      transform-origin: bottom center;
+      animation: dnb-lean-shake 1.1s ease-in-out infinite;
+    }
+
+    .dnb-container {
+      position: absolute;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .dnb-container .sticker--dnb {
+      position: relative;
+    }
+
+    @keyframes dnb-lean-shake {
+      0%, 100% {
+        transform: rotate(0deg) translateX(0);
+      }
+
+      30% {
+        transform: rotate(-12deg) translateX(-6px);
+      }
+
+      70% {
+        transform: rotate(12deg) translateX(6px);
+      }
+    }
+
+    .sticker--clickable {
+      pointer-events: auto;
+      cursor: pointer;
+      transition: filter 0.15s ease;
+    }
+
+    .sticker--clickable:hover {
+      filter: brightness(1.15);
+    }
+
+    .sticker--castle {
+      --sticker-size: 100px;
+      top: 300px;
+      left: 800px;
+      transition: opacity 1.2s ease;
+    }
+
+    .sticker--castle.is-complete {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .sticker--legendary-nose {
+      --sticker-size: 100px;
+      top: 300px;
+      left: 800px;
+      z-index: 2;
+      opacity: 0;
+      transition: opacity 1.2s ease;
+    }
+
+    .sticker--legendary-nose.is-visible {
+      opacity: 1;
+    }
+
+    .sticker--stork {
+      --sticker-size: 130px;
+      top: 400px;
+      left: 1200px;
+      transition: opacity 1.2s ease;
+    }
+
+    .sticker--stork.is-complete {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .sticker--baby-reward {
+      --sticker-size: 130px;
+      top: 400px;
+      left: 1200px;
+      z-index: 2;
+      opacity: 0;
+      transition: opacity 1.2s ease;
+    }
+
+    .sticker--baby-reward.is-visible {
+      opacity: 1;
+    }
+
+    .sticker--willy {
+      --sticker-size: 120px;
+      top: 500px;
+      left: 600px;
+      transition: opacity 1.2s ease;
+    }
+
+    .sticker--willy.is-complete {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .sticker--dars {
+      --sticker-size: 120px;
+      top: 500px;
+      left: 600px;
+      z-index: 2;
+      opacity: 0;
+      transition: opacity 1.2s ease;
+    }
+
+    .sticker--dars.is-visible {
+      opacity: 1;
+    }
+
+    .dnb-container--traveling .sticker--dnb {
+      animation: none;
+    }
+
+    .sticker--cauldron {
+      --sticker-size: 100px;
+      top: 50px;
+      right: 900px;
+    }
+
+    .sticker--start {
+      --sticker-size: 120px;
+      bottom: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .scene-content.is-locked .sticker--clickable {
+      pointer-events: none;
+      cursor: default;
+    }
+
+    .intro-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(20, 0, 40, 0.72);
+      cursor: pointer;
+    }
+
+    .intro-overlay--hidden { display: none; }
+
+    .intro-box {
+      width: min(720px, 92vw);
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 28px 32px;
+      border: 3px solid rgba(249, 233, 154, 0.85);
+      border-radius: 12px;
+      background: rgba(59, 7, 100, 0.94);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+      cursor: pointer;
+    }
+
+    .intro-text {
+      color: #ffffff;
+      font-size: 1.15rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    .intro-cursor {
+      display: inline-block;
+      width: 2px;
+      margin-left: 2px;
+      background-color: #ffffff;
+      animation: blink 0.8s step-end infinite;
+      vertical-align: text-bottom;
+      height: 1.1em;
+    }
+
+    .intro-cursor--hidden { visibility: hidden; }
+
+    .intro-continue {
+      margin-top: 18px;
+      color: #f9e99a;
+      font-size: 1rem;
+      font-style: italic;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .intro-continue--visible { opacity: 1; }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="intro-overlay" id="intro-overlay">
+    <div class="intro-box" id="intro-box">
+      <p class="intro-text">
+        <span id="intro-typewriter"></span><span id="intro-cursor" class="intro-cursor"></span>
+      </p>
+      <p class="intro-continue" id="intro-continue">&lt;click to continue&gt;</p>
+    </div>
+  </div>
+
+  <div class="scene-background" aria-hidden="true">
+    <div class="scene-background__gradient"></div>
+    <div class="scene-background__vignette"></div>
+  </div>
+
+  <div class="scene-content is-locked" id="scene-content">
+  <svg class="map-path" aria-hidden="true">
+    <path class="map-path__line" id="game-path"></path>
+  </svg>
+
+  <img
+    class="sticker sticker--great-map"
+    src="stickers/The_Great_Map_sticker.png"
+    alt="The Great Map"
+  >
+  <ul class="ingredient-checklist" id="ingredient-checklist" aria-label="Arcane ingredients collected">
+    <li class="ingredient-checklist__item" id="checklist-item-1">Arcane Ingredient 1</li>
+    <li class="ingredient-checklist__item" id="checklist-item-2">Arcane Ingredient 2</li>
+    <li class="ingredient-checklist__item" id="checklist-item-3">Arcane Ingredient 3</li>
+  </ul>
+  <div class="dnb-container" id="dnb-container">
+    <img
+      class="sticker sticker--dnb"
+      id="sticker-dnb"
+      src="stickers/DNB_sticker.png"
+      alt="DNB"
+    >
+  </div>
+  <img
+    class="sticker sticker--castle sticker--clickable"
+    id="sticker-castle"
+    src="stickers/Castle_sticker.png"
+    alt="Castle"
+  >
+  <img
+    class="sticker sticker--legendary-nose"
+    id="sticker-legendary-nose"
+    src="stickers/images/Nose/nose_sticker.png"
+    alt="Legendary nose"
+    hidden
+  >
+  <img
+    class="sticker sticker--stork sticker--clickable"
+    id="sticker-stork"
+    src="stickers/Stork_sticker.png"
+    alt="Stork"
+  >
+  <img
+    class="sticker sticker--baby-reward"
+    id="sticker-baby-reward"
+    src="stickers/images/Baby/baby_sticker.png"
+    alt="Baby reward"
+    hidden
+  >
+  <img
+    class="sticker sticker--willy sticker--clickable"
+    id="sticker-willy"
+    src="stickers/Willy_Wonkas_Chocolate_Factory_sticker.png"
+    alt="Willy Wonka's Chocolate Factory"
+  >
+  <img
+    class="sticker sticker--dars"
+    id="sticker-dars"
+    src="stickers/images/DARS/dars_sticker.png"
+    alt="Dars chocolate bar"
+    hidden
+  >
+  <img
+    class="sticker sticker--cauldron sticker--clickable"
+    id="sticker-cauldron"
+    src="stickers/cauldron_sticker.png"
+    alt="Cauldron"
+  >
+  <img
+    class="sticker sticker--start"
+    id="sticker-start"
+    src="stickers/START_sticker.png"
+    alt="Start"
+  >
+  </div>
+
+  <script src="audio/game-audio.js"></script>
+  <script>
+    GameAudio.initBgm('goofy_bgm.mp3');
+  </script>
+  <script>
+    const pathOrder = [
+      'sticker-start',
+      'sticker-willy',
+      'sticker-castle',
+      'sticker-stork',
+      'sticker-cauldron'
+    ];
+
+    const TRAVEL_DURATION_MS = 1400;
+    const TRAVEL_SPEED_PX_PER_MS = 0.45;
+    const DARS_COMPLETE_KEY = 'dars-challenge-complete';
+    const DARS_MAP_ANIMATE_KEY = 'dars-map-animate';
+    const NOSE_COMPLETE_KEY = 'nose-challenge-complete';
+    const NOSE_MAP_ANIMATE_KEY = 'nose-map-animate';
+    const BABY_COMPLETE_KEY = 'baby-challenge-complete';
+    const BABY_MAP_ANIMATE_KEY = 'baby-map-animate';
+    const MAP_INTRO_KEY = 'map-intro-complete';
+
+    const CHECKLIST_DEFAULT = [
+      'Arcane Ingredient 1',
+      'Arcane Ingredient 2',
+      'Arcane Ingredient 3'
+    ];
+
+    const CHECKLIST_REVEALS = {
+      dars: 'The Morinaga DARS bar',
+      nose: 'The one and only NOSE',
+      baby: 'A random BABY'
+    };
+
+    const INTRO_MESSAGES = [
+      'Welcome to the Map. This is where you will attempt to complete the 3 Trials of Arcanum to achieve the Great Arcane ingredients.',
+      'Once you complete each challenge, you will come back to this map. You will have to complete each challenge one-by-one to unlock the next challenge.',
+      'Start with the Chocolate factory. Good Luck!'
+    ];
+    const TYPE_SPEED_MS = 28;
+
+    const sceneContent = document.getElementById('scene-content');
+    const introOverlay = document.getElementById('intro-overlay');
+    const introBox = document.getElementById('intro-box');
+    const introTypewriter = document.getElementById('intro-typewriter');
+    const introCursor = document.getElementById('intro-cursor');
+    const introContinue = document.getElementById('intro-continue');
+    const checklistItems = [
+      document.getElementById('checklist-item-1'),
+      document.getElementById('checklist-item-2'),
+      document.getElementById('checklist-item-3')
+    ];
+
+    let introMessageIndex = 0;
+    let introIsTyping = false;
+    let introWaitingForClick = false;
+    let mapInteractionEnabled = false;
+
+    const destinationStickers = [
+      { id: 'sticker-willy', url: 'dars.html' },
+      { id: 'sticker-castle', url: 'nose.html' },
+      { id: 'sticker-stork', url: 'baby.html' },
+      { id: 'sticker-cauldron', url: 'dnb.html' }
+    ];
+    let isTraveling = false;
+    let activeDestinations = [];
+
+    function isDestinationUnlocked(id) {
+      if (id === 'sticker-willy') {
+        return true;
+      }
+      if (id === 'sticker-castle') {
+        return localStorage.getItem(DARS_COMPLETE_KEY) === 'true';
+      }
+      if (id === 'sticker-stork') {
+        return localStorage.getItem(NOSE_COMPLETE_KEY) === 'true';
+      }
+      if (id === 'sticker-cauldron') {
+        return localStorage.getItem(BABY_COMPLETE_KEY) === 'true';
+      }
+      return false;
+    }
+
+    function isDestinationCompleted(id) {
+      if (id === 'sticker-willy') {
+        return localStorage.getItem(DARS_COMPLETE_KEY) === 'true';
+      }
+      if (id === 'sticker-castle') {
+        return localStorage.getItem(NOSE_COMPLETE_KEY) === 'true';
+      }
+      if (id === 'sticker-stork') {
+        return localStorage.getItem(BABY_COMPLETE_KEY) === 'true';
+      }
+      return false;
+    }
+
+    function refreshDestinationAccess() {
+      destinationStickers.forEach(({ id }) => {
+        const element = document.getElementById(id);
+        const unlocked = isDestinationUnlocked(id);
+        const completed = isDestinationCompleted(id);
+        const canTravel = unlocked && !completed;
+
+        element.classList.toggle('sticker--clickable', canTravel);
+        element.classList.toggle('sticker--locked', !canTravel);
+        element.style.pointerEvents = canTravel ? 'auto' : 'none';
+      });
+
+      activeDestinations = destinationStickers.filter(({ id }) => (
+        isDestinationUnlocked(id) && !isDestinationCompleted(id)
+      ));
+
+      if (mapInteractionEnabled && !isTraveling) {
+        setDestinationStickersEnabled(true);
+      }
+    }
+
+    function updateIngredientChecklist() {
+      const labels = [...CHECKLIST_DEFAULT];
+
+      if (localStorage.getItem(DARS_COMPLETE_KEY) === 'true') {
+        labels[0] = CHECKLIST_REVEALS.dars;
+      }
+      if (localStorage.getItem(NOSE_COMPLETE_KEY) === 'true') {
+        labels[1] = CHECKLIST_REVEALS.nose;
+      }
+      if (localStorage.getItem(BABY_COMPLETE_KEY) === 'true') {
+        labels[2] = CHECKLIST_REVEALS.baby;
+      }
+
+      checklistItems.forEach((item, index) => {
+        item.textContent = labels[index];
+        item.classList.toggle('is-revealed', labels[index] !== CHECKLIST_DEFAULT[index]);
+      });
+    }
+
+    function getStickerCenter(id) {
+      const element = document.getElementById(id);
+      const rect = element.getBoundingClientRect();
+      return {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2
+      };
+    }
+
+    function buildCurvedPath(points, tension = 0.35, segmentCount = points.length - 1, contextPoints = points) {
+      if (points.length < 2 || segmentCount < 1) {
+        return '';
+      }
+
+      let path = `M ${points[0].x} ${points[0].y}`;
+
+      for (let i = 0; i < segmentCount; i += 1) {
+        const previous = contextPoints[i === 0 ? i : i - 1];
+        const current = contextPoints[i];
+        const next = contextPoints[i + 1];
+        const afterNext = contextPoints[i + 2] || next;
+
+        const control1x = current.x + (next.x - previous.x) * tension;
+        const control1y = current.y + (next.y - previous.y) * tension;
+        const control2x = next.x - (afterNext.x - current.x) * tension;
+        const control2y = next.y - (afterNext.y - current.y) * tension;
+
+        path += ` C ${control1x} ${control1y}, ${control2x} ${control2y}, ${next.x} ${next.y}`;
+      }
+
+      return path;
+    }
+
+    function getPathIndex(stickerId) {
+      return pathOrder.indexOf(stickerId);
+    }
+
+    function getOrCreateTravelPathElement() {
+      let travelPath = document.getElementById('travel-path');
+
+      if (!travelPath) {
+        travelPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        travelPath.id = 'travel-path';
+        travelPath.setAttribute('fill', 'none');
+        travelPath.setAttribute('stroke', 'none');
+        document.querySelector('.map-path').appendChild(travelPath);
+      }
+
+      return travelPath;
+    }
+
+    function buildTravelPathTo(targetIndex) {
+      const allPoints = pathOrder.map(getStickerCenter);
+      return buildCurvedPath(allPoints, 0.35, targetIndex, allPoints);
+    }
+
+    function easeInOut(progress) {
+      return progress < 0.5
+        ? 2 * progress * progress
+        : 1 - ((-2 * progress + 2) ** 2) / 2;
+    }
+
+    function animateDnbAlongPath(travelPath, duration, onComplete) {
+      const dnbContainer = document.getElementById('dnb-container');
+      const pathLength = travelPath.getTotalLength();
+      const startTime = performance.now();
+
+      function frame(now) {
+        const progress = Math.min((now - startTime) / duration, 1);
+        const point = travelPath.getPointAtLength(easeInOut(progress) * pathLength);
+
+        dnbContainer.style.left = `${point.x}px`;
+        dnbContainer.style.top = `${point.y}px`;
+        dnbContainer.style.transform = 'translate(-50%, -50%)';
+
+        if (progress < 1) {
+          requestAnimationFrame(frame);
+          return;
+        }
+
+        onComplete();
+      }
+
+      requestAnimationFrame(frame);
+    }
+
+    function drawGamePath() {
+      const svg = document.querySelector('.map-path');
+      const path = document.getElementById('game-path');
+      const points = pathOrder.map(getStickerCenter);
+
+      svg.setAttribute('viewBox', `0 0 ${window.innerWidth} ${window.innerHeight}`);
+
+      path.setAttribute('d', buildCurvedPath(points));
+    }
+
+    function positionDnbOnStart() {
+      const start = document.getElementById('sticker-start');
+      const dnbContainer = document.getElementById('dnb-container');
+      const startRect = start.getBoundingClientRect();
+
+      dnbContainer.style.transition = '';
+      dnbContainer.style.left = `${startRect.left + startRect.width / 2}px`;
+      dnbContainer.style.top = `${startRect.top + startRect.height / 2}px`;
+      dnbContainer.style.transform = 'translate(-50%, -50%)';
+    }
+
+    function setDestinationStickersEnabled(enabled) {
+      activeDestinations.forEach(({ id }) => {
+        document.getElementById(id).style.pointerEvents = enabled ? 'auto' : 'none';
+      });
+    }
+
+    function applyDarsChallengeComplete(animate) {
+      const willySticker = document.getElementById('sticker-willy');
+      const darsSticker = document.getElementById('sticker-dars');
+
+      willySticker.classList.remove('sticker--clickable');
+      willySticker.classList.add('sticker--locked');
+      willySticker.style.pointerEvents = 'none';
+      darsSticker.hidden = false;
+
+      if (animate) {
+        requestAnimationFrame(() => {
+          willySticker.classList.add('is-complete');
+          darsSticker.classList.add('is-visible');
+        });
+      } else {
+        willySticker.classList.add('is-complete');
+        darsSticker.classList.add('is-visible');
+      }
+
+      refreshDestinationAccess();
+      updateIngredientChecklist();
+    }
+
+    function initDarsCompletion() {
+      if (localStorage.getItem(DARS_COMPLETE_KEY) !== 'true') {
+        return;
+      }
+
+      const shouldAnimate = sessionStorage.getItem(DARS_MAP_ANIMATE_KEY) === 'true';
+      if (shouldAnimate) {
+        sessionStorage.removeItem(DARS_MAP_ANIMATE_KEY);
+      }
+
+      applyDarsChallengeComplete(shouldAnimate);
+    }
+
+    function applyNoseChallengeComplete(animate) {
+      const castleSticker = document.getElementById('sticker-castle');
+      const legendaryNoseSticker = document.getElementById('sticker-legendary-nose');
+
+      castleSticker.classList.remove('sticker--clickable');
+      castleSticker.classList.add('sticker--locked');
+      castleSticker.style.pointerEvents = 'none';
+      legendaryNoseSticker.hidden = false;
+
+      if (animate) {
+        requestAnimationFrame(() => {
+          castleSticker.classList.add('is-complete');
+          legendaryNoseSticker.classList.add('is-visible');
+        });
+      } else {
+        castleSticker.classList.add('is-complete');
+        legendaryNoseSticker.classList.add('is-visible');
+      }
+
+      refreshDestinationAccess();
+      updateIngredientChecklist();
+    }
+
+    function initNoseCompletion() {
+      if (localStorage.getItem(NOSE_COMPLETE_KEY) !== 'true') {
+        return;
+      }
+
+      const shouldAnimate = sessionStorage.getItem(NOSE_MAP_ANIMATE_KEY) === 'true';
+      if (shouldAnimate) {
+        sessionStorage.removeItem(NOSE_MAP_ANIMATE_KEY);
+      }
+
+      applyNoseChallengeComplete(shouldAnimate);
+    }
+
+    function applyBabyChallengeComplete(animate) {
+      const storkSticker = document.getElementById('sticker-stork');
+      const babyRewardSticker = document.getElementById('sticker-baby-reward');
+
+      storkSticker.classList.remove('sticker--clickable');
+      storkSticker.classList.add('sticker--locked');
+      storkSticker.style.pointerEvents = 'none';
+      babyRewardSticker.hidden = false;
+
+      if (animate) {
+        requestAnimationFrame(() => {
+          storkSticker.classList.add('is-complete');
+          babyRewardSticker.classList.add('is-visible');
+        });
+      } else {
+        storkSticker.classList.add('is-complete');
+        babyRewardSticker.classList.add('is-visible');
+      }
+
+      refreshDestinationAccess();
+      updateIngredientChecklist();
+    }
+
+    function initBabyCompletion() {
+      if (localStorage.getItem(BABY_COMPLETE_KEY) !== 'true') {
+        return;
+      }
+
+      const shouldAnimate = sessionStorage.getItem(BABY_MAP_ANIMATE_KEY) === 'true';
+      if (shouldAnimate) {
+        sessionStorage.removeItem(BABY_MAP_ANIMATE_KEY);
+      }
+
+      applyBabyChallengeComplete(shouldAnimate);
+    }
+
+    function lockMap() {
+      mapInteractionEnabled = false;
+      sceneContent.classList.add('is-locked');
+    }
+
+    function unlockMap() {
+      mapInteractionEnabled = true;
+      sceneContent.classList.remove('is-locked');
+    }
+
+    function hideIntro() {
+      introOverlay.classList.add('intro-overlay--hidden');
+      unlockMap();
+    }
+
+    function completeIntro() {
+      localStorage.setItem(MAP_INTRO_KEY, 'true');
+      hideIntro();
+      refreshDestinationAccess();
+    }
+
+    function showContinuePrompt() {
+      introWaitingForClick = true;
+      introCursor.classList.add('intro-cursor--hidden');
+      introContinue.classList.add('intro-continue--visible');
+    }
+
+    function resetIntroPanel() {
+      introTypewriter.textContent = '';
+      introContinue.classList.remove('intro-continue--visible');
+      introCursor.classList.remove('intro-cursor--hidden');
+      introWaitingForClick = false;
+    }
+
+    function typeIntroMessage(message, onComplete) {
+      introIsTyping = true;
+      let charIndex = 0;
+      const text = GameAudio.replacePlayerText(message);
+
+      function typeNextCharacter() {
+        if (charIndex < text.length) {
+          const char = text.charAt(charIndex);
+          introTypewriter.textContent += char;
+          GameAudio.playTypeChar(char);
+          charIndex += 1;
+          window.setTimeout(typeNextCharacter, TYPE_SPEED_MS);
+          return;
+        }
+        introIsTyping = false;
+        onComplete();
+      }
+
+      typeNextCharacter();
+    }
+
+    function startIntroMessage() {
+      resetIntroPanel();
+      typeIntroMessage(INTRO_MESSAGES[introMessageIndex], showContinuePrompt);
+    }
+
+    function advanceIntro() {
+      if (introIsTyping || !introWaitingForClick) {
+        return;
+      }
+      introMessageIndex += 1;
+      if (introMessageIndex >= INTRO_MESSAGES.length) {
+        completeIntro();
+        return;
+      }
+      startIntroMessage();
+    }
+
+    function initIntro() {
+      if (localStorage.getItem(MAP_INTRO_KEY) === 'true') {
+        hideIntro();
+        refreshDestinationAccess();
+        return;
+      }
+
+      lockMap();
+      startIntroMessage();
+      introOverlay.addEventListener('click', advanceIntro);
+      introBox.addEventListener('click', (event) => {
+        event.stopPropagation();
+        advanceIntro();
+      });
+    }
+
+    function travelDnbTo(targetId, destinationUrl) {
+      if (!mapInteractionEnabled || isTraveling) {
+        return;
+      }
+
+      const targetIndex = getPathIndex(targetId);
+
+      if (targetIndex <= 0) {
+        return;
+      }
+
+      isTraveling = true;
+
+      const dnbContainer = document.getElementById('dnb-container');
+      const travelPath = getOrCreateTravelPathElement();
+      const pathData = buildTravelPathTo(targetIndex);
+
+      travelPath.setAttribute('d', pathData);
+
+      const pathLength = travelPath.getTotalLength();
+      const duration = Math.max(TRAVEL_DURATION_MS, pathLength / TRAVEL_SPEED_PX_PER_MS);
+
+      dnbContainer.classList.add('dnb-container--traveling');
+      setDestinationStickersEnabled(false);
+      dnbContainer.style.transition = '';
+
+      animateDnbAlongPath(travelPath, duration, () => {
+        window.location.href = destinationUrl;
+      });
+    }
+
+    function updateMapLayout() {
+      drawGamePath();
+
+      if (!isTraveling) {
+        positionDnbOnStart();
+      }
+    }
+
+    window.addEventListener('load', () => {
+      initIntro();
+      initDarsCompletion();
+      initNoseCompletion();
+      initBabyCompletion();
+      updateIngredientChecklist();
+      refreshDestinationAccess();
+      updateMapLayout();
+    });
+    window.addEventListener('resize', updateMapLayout);
+
+    destinationStickers.forEach(({ id, url }) => {
+      document.getElementById(id).addEventListener('click', () => {
+        if (!isDestinationUnlocked(id) || isDestinationCompleted(id)) {
+          return;
+        }
+        travelDnbTo(id, url);
+      });
+    });
+  </script>
+</body>
+</html>
