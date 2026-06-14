@@ -111,9 +111,7 @@
 
       function typeNextCharacter() {
         if (charIndex < text.length) {
-          const char = text.charAt(charIndex);
-          textElement.textContent += char;
-          GameAudio.playTypeChar(char);
+          textElement.textContent += text.charAt(charIndex);
           charIndex += 1;
           setTimeout(typeNextCharacter, TYPE_SPEED_MS);
           return;

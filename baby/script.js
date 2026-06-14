@@ -712,11 +712,7 @@ class IntroController {
 
     const typeNextCharacter = () => {
       if (charIndex < text.length) {
-        const char = text.charAt(charIndex);
-        this.el.typewriter.textContent += char;
-        if (window.GameAudio) {
-          window.GameAudio.playTypeChar(char);
-        }
+        this.el.typewriter.textContent += text.charAt(charIndex);
         charIndex += 1;
         window.setTimeout(typeNextCharacter, INTRO_TYPE_SPEED_MS);
         return;

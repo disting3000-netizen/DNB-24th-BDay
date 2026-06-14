@@ -932,9 +932,7 @@
 
       function typeNextCharacter() {
         if (charIndex < text.length) {
-          const char = text.charAt(charIndex);
-          introTypewriter.textContent += char;
-          GameAudio.playTypeChar(char);
+          introTypewriter.textContent += text.charAt(charIndex);
           charIndex += 1;
           window.setTimeout(typeNextCharacter, TYPE_SPEED_MS);
           return;

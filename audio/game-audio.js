@@ -1,24 +1,5 @@
 (function () {
-  const TYPING_SRC = 'audio/keyboard_type.mp3';
-  const typingPool = Array.from({ length: 5 }, () => {
-    const audio = new Audio(TYPING_SRC);
-    audio.volume = 0.28;
-    return audio;
-  });
-
-  let typingPoolIndex = 0;
   let activeBgm = null;
-
-  function playTypeChar(char) {
-    if (!char || char === ' ' || char === '\n') {
-      return;
-    }
-
-    const audio = typingPool[typingPoolIndex];
-    typingPoolIndex = (typingPoolIndex + 1) % typingPool.length;
-    audio.currentTime = 0;
-    audio.play().catch(() => {});
-  }
 
   function initBgm(filename) {
     if (activeBgm) {
@@ -50,7 +31,6 @@
 
   window.GameAudio = {
     initBgm,
-    playTypeChar,
     replacePlayerText
   };
 })();
